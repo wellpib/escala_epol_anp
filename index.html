@@ -673,6 +673,16 @@ function parseAloc(file) {
       parseSheet(wb.Sheets['FORA DE BRASÍLIA'] || wb.Sheets[wb.SheetNames[0]], 'FORA');
       parseSheet(wb.Sheets['DE BRASÍLIA']      || wb.Sheets[wb.SheetNames[1]], 'BSB');
 
+      // Propagar FUNÇÃO da aba FORA para servidores BSB que não têm função definida
+      // (aba DE BRASÍLIA não possui coluna FUNÇÃO — buscamos pelo nome)
+      const normNome = n => n.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+      const funcaoPorNome = {};
+      servidores.filter(s => s.origem === 'FORA' && s.funcao)
+                .forEach(s => { funcaoPorNome[normNome(s.nome)] = s.funcao; });
+      servidores.forEach(s => {
+        if (!s.funcao) s.funcao = funcaoPorNome[normNome(s.nome)] || '';
+      });
+
       // Deduplicar por nome + função + dtIni + dtFim
       const seen = new Set();
       servidores = servidores.filter(s => {
@@ -868,8 +878,8 @@ function renderServidores() {
       <td class="fw-semibold">${escHtml(s.nome)}</td>
       <td>${escHtml(s.cargo)}</td>
       <td>${escHtml(s.lotacao)}</td>
-      <td><span class="badge ${badge}">${escHtml(s.funcao)}</span></td>
-      <td>${s.dtIni ? escHtml(formatDate(s.dtIni)) : '—'} ${s.dtFim ? ' → ' + escHtml(formatDate(s.dtFim)) : ''}</td>
+      <td><span class="badge ${badge}">${escHtml(s.funcao) || '<i>Não definida</i>'}</span></td>
+      <td>${s.dtIni ? escHtml(formatDate(s.dtIni)) : '—'} ${s.dtFim ? ' → ' + escHtml(formatDate(s.dtFim)) : '<span class="text-muted small">sem restrição</span>'}</td>
       <td><span class="badge ${origBadge}">${s.origem==='BSB'?'Brasília':'Fora BSB'}</span></td>
       <td style="font-size:.8rem">${s.tel ? '<i class="bi bi-telephone me-1"></i>'+escHtml(s.tel)+' ' : ''}${s.email ? '<i class="bi bi-envelope me-1"></i>'+escHtml(s.email) : ''}</td>
     </tr>`;
@@ -976,9 +986,9 @@ function renderRelDisp() {
       <td class="fw-semibold">${escHtml(s.nome)}</td>
       <td>${escHtml(s.cargo)}</td>
       <td>${escHtml(s.lotacao)}</td>
-      <td><span class="badge ${badge}">${escHtml(s.funcao)}</span></td>
+      <td><span class="badge ${badge}">${escHtml(s.funcao) || '<i>Não definida</i>'}</span></td>
       <td>${s.dtIni ? escHtml(formatDate(s.dtIni)) : '—'}</td>
-      <td>${s.dtFim ? escHtml(formatDate(s.dtFim)) : '—'}</td>
+      <td>${s.dtFim ? escHtml(formatDate(s.dtFim)) : 'sem restrição'}</td>
       <td>${s.origem === 'BSB' ? 'Brasília' : 'Fora BSB'}</td>
       <td>${escHtml(s.tel)}</td>
       <td>${escHtml(s.email)}</td>
