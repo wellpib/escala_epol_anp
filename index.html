@@ -612,47 +612,57 @@ function parseAloc(file) {
       function parseSheet(ws, origem) {
         if (!ws) return;
         const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, dateNF: 'yyyy-mm-dd' });
-        // Encontrar linha de cabeçalho real (contém "NOME" ou "CARGO")
+        // Encontrar linha de cabeçalho real (contém "NOME" e "CARGO")
         let hIdx = -1;
         for (let i = 0; i < Math.min(6, rows.length); i++) {
           const cells = rows[i].map(c => (c||'').toString().toUpperCase().trim());
           if (cells.includes('NOME') && cells.includes('CARGO')) { hIdx = i; break; }
         }
         if (hIdx < 0) return;
-        const header = rows[hIdx].map(c => (c||'').toString().toUpperCase()
-          .normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim());
-        const ci = t => header.findIndex(h => h === t || h.startsWith(t));
-        const iNome = ci('NOME');
+
+        // Normalizar cabeçalho para busca por nome
+        const norm = s => (s||'').toString().toUpperCase()
+          .normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+        const header = rows[hIdx].map(norm);
+        const ci = (...terms) => header.findIndex(h => terms.some(t => h === norm(t) || h.includes(norm(t))));
+
+        const iNome  = ci('NOME');
         const iCargo = ci('CARGO');
-        const iLot = ci('LOTACAO') >= 0 ? ci('LOTACAO') : header.findIndex(h => h.startsWith('LOTA'));
-        const iFun = ci('FUNCAO') >= 0 ? ci('FUNCAO') : header.findIndex(h => h.includes('FUN'));
-        const iEmail = header.findIndex(h => h.includes('MAIL'));
-        const iTel = header.findIndex(h => h.includes('TELEFONE') || h.includes('TEL'));
-        // Para FORA: col 9 = data início, col 10 = data fim (DATAS ALOCACAO)
-        // Para BSB: col 10 = DISPONIBILIDADE (sem datas de viagem)
-        const iDtIni = 9;
-        const iDtFim = origem === 'FORA' ? 10 : -1;
-        const iDisp  = origem === 'BSB'  ? 10 : -1; // "DISPONIBILIDADE" col
+        const iLot   = ci('LOTAÇÃO', 'LOTACAO');
+        const iFun   = ci('FUNÇÃO', 'FUNCAO');         // ausente na aba DE BRASÍLIA
+        const iEmail = ci('E-MAIL', 'EMAIL', 'MAIL');
+        const iTel   = ci('TELEFONE', 'TEL');
+        // Datas: busca pelo novo nome de coluna (DATA INICIO / DATA FINAL)
+        const iDtIni = ci('DATA INICIO', 'DATA INÍCIO', 'INICIO');
+        const iDtFim = ci('DATA FINAL', 'DATA FIM', 'FINAL');
+        // Disponibilidade (aba DE BRASÍLIA)
+        const iDisp  = ci('DISPONIBILIDADE');
 
         for (let i = hIdx + 1; i < rows.length; i++) {
           const r = rows[i];
           const nome = iNome >= 0 ? (r[iNome]||'').toString().trim() : '';
           if (!nome || nome === 'nan' || nome === 'NaN') continue;
-          // Pular cabeçalhos de seção
-          const col0 = (r[0]||'').toString().toUpperCase();
-          if (col0.includes('VIAGEM') || col0.includes('BRASILIA') || col0.includes('BRASÍLIA')) continue;
-          // BSB: pular se DISPONIBILIDADE = "Não"
-          if (origem === 'BSB' && iDisp >= 0) {
-            const disp = (r[iDisp]||'').toString().toUpperCase().trim();
-            if (disp === 'NÃO' || disp === 'NAO' || disp === 'NÃO') continue;
+          // Pular linhas de seção (ex: "VIAGEM COM PASSAGEM AEREA")
+          const col0 = norm(r[0]||'');
+          if (col0.includes('VIAGEM') || col0.includes('BRASILIA')) continue;
+
+          // Aba DE BRASÍLIA: pular se DISPONIBILIDADE contiver "NÃO"
+          if (iDisp >= 0) {
+            const disp = norm(r[iDisp]||'');
+            if (disp.includes('NAO') || disp === 'N') continue;
           }
+
+          // Datas: se ambas vazias → disponibilidade total (null = sem restrição)
+          const dtIni = iDtIni >= 0 ? parseDate(r[iDtIni]) : null;
+          const dtFim = iDtFim >= 0 ? parseDate(r[iDtFim]) : null;
+
           servidores.push({
             nome,
-            cargo:   iCargo >= 0 ? (r[iCargo]||'').toString().trim() : '',
-            lotacao: iLot   >= 0 ? (r[iLot]  ||'').toString().trim() : '',
-            funcao:  iFun   >= 0 ? (r[iFun]  ||'').toString().trim().toUpperCase() : '',
-            dtIni: origem === 'FORA' ? parseDate(r[iDtIni]) : null,
-            dtFim: origem === 'FORA' ? parseDate(r[iDtFim]) : null,
+            cargo:       iCargo >= 0 ? (r[iCargo]||'').toString().trim() : '',
+            lotacao:     iLot   >= 0 ? (r[iLot]  ||'').toString().trim() : '',
+            funcao:      iFun   >= 0 ? (r[iFun]  ||'').toString().trim().toUpperCase() : '',
+            dtIni,   // null = sem restrição de início
+            dtFim,   // null = sem restrição de fim
             origem,
             tel:   iTel   >= 0 ? (r[iTel]  ||'').toString().trim() : '',
             email: iEmail >= 0 ? (r[iEmail]||'').toString().trim() : '',
@@ -1130,7 +1140,7 @@ function formatDate(iso) {
 }
 
 function isDisponivelNaData(s, dt) {
-  if (s.origem === 'BSB') return true; // BSB sem datas = sempre disponível
+  // Sem datas = disponibilidade total (regra explícita do usuário)
   if (!s.dtIni && !s.dtFim) return true;
   if (s.dtIni && dt < s.dtIni) return false;
   if (s.dtFim && dt > s.dtFim) return false;
@@ -1138,7 +1148,7 @@ function isDisponivelNaData(s, dt) {
 }
 
 function isDisponivelNoIntervalo(s, dtI, dtF) {
-  if (s.origem === 'BSB') return true;
+  // Sem datas = disponibilidade total
   if (!s.dtIni && !s.dtFim) return true;
   // Overlap: srv.ini <= dtF AND srv.fim >= dtI
   const sIni = s.dtIni || '1900-01-01';
