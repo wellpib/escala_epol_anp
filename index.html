@@ -103,6 +103,7 @@
     .slot-row-mon    { background: #f3e5f5; }
     .slot-row-filled { background: #f1f8e9 !important; }
     .slot-row-conflict { background: #fff3e0 !important; }
+    .slot-row-ignorado { background: #e0f7fa !important; opacity: 0.7; }
     .slot-select {
       font-size: .82rem;
       min-width: 180px;
@@ -110,6 +111,7 @@
     }
     .slot-select.filled  { border-color: #66bb6a !important; background: #f9fbe7; }
     .slot-select.conflict { border-color: #ffa726 !important; background: #fff8e1; }
+    .slot-select.ignorado { border-color: #26c6da !important; background: #e0f7fa; opacity: 0.8; }
     .save-toast {
       position: fixed; bottom: 1.5rem; right: 1.5rem;
       background: #2e7d32; color: #fff;
@@ -123,6 +125,11 @@
       background: var(--pf-azul) !important;
       color: #fff; font-weight: 700;
       font-size: .82rem; padding: .35rem .6rem;
+      vertical-align: middle;
+    }
+    .grupo-header .btn {
+      font-size: .75rem;
+      padding: .25rem .5rem;
     }
 
     /* Print */
@@ -334,9 +341,14 @@
   <div id="tab-servidores" style="display:none">
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h5 class="section-title mb-0">Servidores Disponíveis</h5>
-      <button class="btn btn-sm" style="background:var(--pf-azul);color:#fff" onclick="abrirModalServidor()">
-        <i class="bi bi-plus-circle me-1"></i>Novo Servidor
-      </button>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm" style="background:var(--pf-azul);color:#fff" onclick="abrirModalServidor()">
+          <i class="bi bi-plus-circle me-1"></i>Novo Servidor
+        </button>
+        <button class="btn btn-sm btn-outline-danger" onclick="limparTodosServidores()" title="Excluir todos os servidores">
+          <i class="bi bi-trash me-1"></i>Limpar Tudo
+        </button>
+      </div>
     </div>
 
     <div class="card p-3 mb-3 no-print shadow-sm">
@@ -462,6 +474,66 @@
     </div>
   </div>
 
+  <!-- Modal: Adicionar/Editar Linha da Grade -->
+  <div class="modal fade" id="modalGrade" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header" style="background:var(--pf-azul);color:#fff">
+          <h5 class="modal-title" id="modalGradeTitulo">Adicionar Linha na Grade</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="formGrade">
+            <input type="hidden" id="grade-index" />
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label">Data <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" id="grade-data" required />
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">Turno</label>
+                <select class="form-select" id="grade-turno">
+                  <option value="">Selecione...</option>
+                  <option value="Manhã">Manhã</option>
+                  <option value="Tarde">Tarde</option>
+                  <option value="Noite">Noite</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">Horário <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="grade-horario" placeholder="Ex: 08:00-10:00" required />
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">Módulo</label>
+                <input type="text" class="form-control" id="grade-modulo" placeholder="Ex: Módulo 1" />
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">Código da Aula</label>
+                <input type="text" class="form-control" id="grade-codaula" placeholder="Ex: A001" />
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">Função <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="grade-funcao" placeholder="Ex: Professor, Monitor, Instrutor" required />
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">Servidor</label>
+                <input type="text" class="form-control" id="grade-servidor" placeholder="Nome do servidor (opcional)" />
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">Turma <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="grade-turma" placeholder="Ex: K (11)" required />
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" onclick="salvarLinhaGrade()">Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ===================== TAB: GRADE ===================== -->
   <div id="tab-grade" style="display:none">
     <h5 class="section-title">Grade da Semana</h5>
@@ -538,8 +610,16 @@
         </div>
 
       </div>
-      <!-- Botão limpar filtros -->
-      <div class="mt-2 text-end">
+      <!-- Botão limpar filtros e adicionar linha -->
+      <div class="mt-2 d-flex justify-content-between align-items-center">
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-primary" onclick="abrirModalGrade()">
+            <i class="bi bi-plus-circle me-1"></i>Adicionar Linha
+          </button>
+          <button class="btn btn-sm btn-outline-danger" onclick="limparTodaGrade()" title="Excluir todas as linhas da grade">
+            <i class="bi bi-trash me-1"></i>Limpar Tudo
+          </button>
+        </div>
         <button class="btn btn-sm btn-link text-secondary p-0" onclick="limparFiltrosGrade()">
           <i class="bi bi-x-circle me-1"></i>Limpar filtros
         </button>
@@ -587,6 +667,7 @@
                 <th>Função</th>
                 <th>Servidor</th>
                 <th>Turma</th>
+                <th class="no-print">Ações</th>
               </tr>
             </thead>
             <tbody id="tbl-grade-body"></tbody>
@@ -627,25 +708,31 @@
 
     <!-- Cards resumo -->
     <div class="row g-2 mb-3">
-      <div class="col-6 col-md-3">
+      <div class="col-6 col-md">
         <div class="card text-center p-2 shadow-sm" style="background:var(--pf-azul);color:#fff;border-radius:10px">
-          <div class="small opacity-75">Total Vagas ePol</div>
+          <div class="small opacity-75">Total Vagas</div>
           <div style="font-size:1.8rem;font-weight:700" id="mg-cnt-total">0</div>
         </div>
       </div>
-      <div class="col-6 col-md-3">
+      <div class="col-6 col-md">
         <div class="card text-center p-2 shadow-sm" style="background:#2e7d32;color:#fff;border-radius:10px">
           <div class="small opacity-75">Preenchidas</div>
           <div style="font-size:1.8rem;font-weight:700" id="mg-cnt-filled">0</div>
         </div>
       </div>
-      <div class="col-6 col-md-3">
+      <div class="col-6 col-md">
+        <div class="card text-center p-2 shadow-sm" style="background:#00acc1;color:#fff;border-radius:10px">
+          <div class="small opacity-75">Ignoradas</div>
+          <div style="font-size:1.8rem;font-weight:700" id="mg-cnt-ignorado">0</div>
+        </div>
+      </div>
+      <div class="col-6 col-md">
         <div class="card text-center p-2 shadow-sm" style="background:#e65100;color:#fff;border-radius:10px">
           <div class="small opacity-75">Em Aberto</div>
           <div style="font-size:1.8rem;font-weight:700" id="mg-cnt-open">0</div>
         </div>
       </div>
-      <div class="col-6 col-md-3">
+      <div class="col-12 col-md">
         <div class="card text-center p-2 shadow-sm" style="background:#f57f17;color:#fff;border-radius:10px">
           <div class="small opacity-75">Conflitos</div>
           <div style="font-size:1.8rem;font-weight:700" id="mg-cnt-conflict">0</div>
@@ -664,11 +751,14 @@
         </div>
         <div class="col-6 col-md-2">
           <label class="form-label small fw-semibold mb-1">Função</label>
-          <select class="form-select form-select-sm" id="mg-filt-funcao" onchange="renderMontarGrade()">
-            <option value="">Ambas</option>
-            <option value="Prof. EPOL">Prof. EPOL</option>
-            <option value="Monitor EPOL">Monitor EPOL</option>
-          </select>
+          <div class="dropdown">
+            <button class="btn btn-sm btn-outline-secondary w-100 text-start d-flex justify-content-between align-items-center"
+                    type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" id="mg-filt-funcao-btn">
+              <span id="mg-filt-funcao-lbl">Todas</span>
+              <i class="bi bi-chevron-down"></i>
+            </button>
+            <div class="dropdown-menu p-2 ms-filter-menu" id="mg-filt-funcao-menu" style="max-height:300px;overflow-y:auto"></div>
+          </div>
         </div>
         <div class="col-6 col-md-2">
           <label class="form-label small fw-semibold mb-1">Status</label>
@@ -676,6 +766,7 @@
             <option value="">Todos</option>
             <option value="aberto">Em aberto</option>
             <option value="preenchido">Preenchidos</option>
+            <option value="ignorado">Ignorados</option>
             <option value="conflito">Com conflito</option>
           </select>
         </div>
@@ -683,12 +774,6 @@
           <label class="form-label small fw-semibold mb-1">Turma</label>
           <input type="text" class="form-control form-control-sm" id="mg-filt-turma"
                  placeholder="Ex: K (11)" oninput="renderMontarGrade()" />
-        </div>
-        <div class="col-12 col-md-4 d-flex align-items-end gap-2">
-          <div class="form-check mb-0">
-            <input class="form-check-input" type="checkbox" id="mg-mostrar-todos" onchange="renderMontarGrade()" />
-            <label class="form-check-label small" for="mg-mostrar-todos">Mostrar todas as funções</label>
-          </div>
         </div>
       </div>
     </div>
@@ -700,6 +785,7 @@
           <table class="table table-sm mb-0" id="tbl-montar">
             <thead style="background:var(--pf-azul);color:#fff;position:sticky;top:0;z-index:1">
               <tr>
+                <th style="width:40px" class="no-print"></th>
                 <th style="width:90px">Data</th>
                 <th style="width:100px">Horário</th>
                 <th style="width:55px">Módulo</th>
@@ -1288,6 +1374,175 @@ function limparFiltrosGrade() {
 }
 
 // ============================================================
+// CRUD GRADE
+// ============================================================
+
+// Abrir modal para adicionar nova linha na grade
+function abrirModalGrade() {
+  document.getElementById('modalGradeTitulo').textContent = 'Nova Linha da Grade';
+  document.getElementById('formGrade').reset();
+  document.getElementById('grade-index').value = '';
+  
+  const modal = new bootstrap.Modal(document.getElementById('modalGrade'));
+  modal.show();
+}
+
+// Editar linha existente da grade
+function editarLinhaGrade(index) {
+  if (!grade[index]) {
+    alert('Linha não encontrada!');
+    return;
+  }
+  
+  const g = grade[index];
+  
+  document.getElementById('modalGradeTitulo').textContent = 'Editar Linha da Grade';
+  document.getElementById('grade-index').value = index;
+  document.getElementById('grade-data').value = g.data || '';
+  document.getElementById('grade-turno').value = g.turno || '';
+  document.getElementById('grade-horario').value = g.horario || '';
+  document.getElementById('grade-modulo').value = g.modulo || '';
+  document.getElementById('grade-codaula').value = g.codAula || '';
+  document.getElementById('grade-funcao').value = g.funcao || '';
+  document.getElementById('grade-servidor').value = g.servidor || '';
+  document.getElementById('grade-turma').value = g.turma || '';
+  
+  const modal = new bootstrap.Modal(document.getElementById('modalGrade'));
+  modal.show();
+}
+
+// Salvar linha da grade (criar ou atualizar)
+function salvarLinhaGrade() {
+  const form = document.getElementById('formGrade');
+  
+  if (!form.checkValidity()) {
+    form.reportValidity();
+    return;
+  }
+  
+  const indexValue = document.getElementById('grade-index').value;
+  const linhaGrade = {
+    data: document.getElementById('grade-data').value.trim(),
+    turno: document.getElementById('grade-turno').value.trim(),
+    horario: document.getElementById('grade-horario').value.trim(),
+    modulo: document.getElementById('grade-modulo').value.trim(),
+    codAula: document.getElementById('grade-codaula').value.trim(),
+    funcao: document.getElementById('grade-funcao').value.trim(),
+    servidor: document.getElementById('grade-servidor').value.trim(),
+    turma: document.getElementById('grade-turma').value.trim()
+  };
+  
+  // Gerar slotKey
+  const idx = indexValue ? parseInt(indexValue) : grade.length;
+  linhaGrade.slotKey = `${linhaGrade.data}|${linhaGrade.horario}|${linhaGrade.codAula}|${linhaGrade.funcao}|${linhaGrade.turma}|${idx}`;
+  
+  // Verifica se é edição ou novo registro
+  if (indexValue !== '') {
+    const index = parseInt(indexValue);
+    if (index >= 0 && index < grade.length) {
+      grade[index] = linhaGrade;
+    }
+  } else {
+    grade.push(linhaGrade);
+  }
+  
+  // Salvar no Firebase e LocalStorage
+  salvarGradeNoFirebase()
+    .then(() => {
+      salvarGradeLocal();
+      renderGrade();
+      buildFilters();
+      
+      const modalEl = document.getElementById('modalGrade');
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      if (modal) modal.hide();
+      
+      mostrarToast('Linha da grade salva com sucesso!');
+    })
+    .catch(error => {
+      console.error('Erro ao salvar no Firebase:', error);
+      salvarGradeLocal();
+      renderGrade();
+      buildFilters();
+      
+      const modalEl = document.getElementById('modalGrade');
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      if (modal) modal.hide();
+      
+      mostrarToast('Linha da grade salva localmente (Firebase offline)');
+    });
+}
+
+// Limpar toda a grade
+function limparTodaGrade() {
+  if (!grade || grade.length === 0) {
+    alert('Não há linhas para excluir!');
+    return;
+  }
+  
+  if (!confirm(`Tem certeza que deseja excluir TODAS as ${grade.length} linha(s) da grade?\n\nEsta ação não pode ser desfeita!`)) {
+    return;
+  }
+  
+  // Confirmar novamente
+  if (!confirm('CONFIRMAÇÃO FINAL: Toda a grade será excluída permanentemente!')) {
+    return;
+  }
+  
+  const totalLinhas = grade.length;
+  
+  // Limpar array
+  grade.length = 0;
+  
+  // Salvar no Firebase e LocalStorage
+  salvarGradeNoFirebase()
+    .then(() => {
+      salvarGradeLocal();
+      renderGrade();
+      buildFilters();
+      mostrarToast(`${totalLinhas} linha(s) da grade excluída(s) com sucesso!`);
+    })
+    .catch(error => {
+      console.error('Erro ao limpar grade no Firebase:', error);
+      salvarGradeLocal();
+      renderGrade();
+      buildFilters();
+      mostrarToast(`${totalLinhas} linha(s) da grade excluída(s) localmente!`);
+    });
+}
+
+// Excluir linha da grade
+function excluirLinhaGrade(index) {
+  if (!confirm('Tem certeza que deseja excluir esta linha da grade?')) {
+    return;
+  }
+  
+  if (index < 0 || index >= grade.length) {
+    alert('Linha não encontrada!');
+    return;
+  }
+  
+  // Remover do array
+  grade.splice(index, 1);
+  
+  // Salvar no Firebase e LocalStorage
+  salvarGradeNoFirebase()
+    .then(() => {
+      salvarGradeLocal();
+      renderGrade();
+      buildFilters();
+      mostrarToast('Linha da grade excluída com sucesso!');
+    })
+    .catch(error => {
+      console.error('Erro ao excluir do Firebase:', error);
+      salvarGradeLocal();
+      renderGrade();
+      buildFilters();
+      mostrarToast('Linha da grade excluída localmente (Firebase offline)');
+    });
+}
+
+// ============================================================
 // GRADE
 // ============================================================
 function buildFilters() {
@@ -1321,7 +1576,7 @@ function buildFilters() {
 
 function renderGrade() {
   if (!grade || grade.length === 0) {
-    document.getElementById('tbl-grade-body').innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Nenhuma grade carregada</td></tr>';
+    document.getElementById('tbl-grade-body').innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">Nenhuma grade carregada</td></tr>';
     document.getElementById('epol-counters').style.display = 'none';
     return;
   }
@@ -1354,8 +1609,9 @@ function renderGrade() {
   document.getElementById('epol-counters').style.display = filtered.some(g => g && g.funcao && isEpol(g.funcao)) ? '' : 'none';
 
   let html = '';
-  filtered.forEach(g => {
+  filtered.forEach((g, displayIndex) => {
     if (!g) return;
+    const originalIndex = grade.indexOf(g);
     const isEpolRow = g.funcao && isEpol(g.funcao);
     const filled = g.servidor && g.servidor.trim() !== '';
     let rowClass = isEpolRow ? (filled ? 'vaga-preenchida' : 'vaga-livre') : '';
@@ -1370,9 +1626,17 @@ function renderGrade() {
       <td>${escHtml(g.funcao)}${funcBadge}</td>
       <td>${filled ? escHtml(g.servidor) : '<span class="text-warning"><i class="bi bi-exclamation-circle me-1"></i>Em aberto</span>'}</td>
       <td>${escHtml(g.turma)}</td>
+      <td class="no-print">
+        <button class="btn btn-sm btn-outline-primary btn-acao me-1" onclick="editarLinhaGrade(${originalIndex})" title="Editar">
+          <i class="bi bi-pencil"></i>
+        </button>
+        <button class="btn btn-sm btn-outline-danger btn-acao" onclick="excluirLinhaGrade(${originalIndex})" title="Excluir">
+          <i class="bi bi-trash"></i>
+        </button>
+      </td>
     </tr>`;
   });
-  document.getElementById('tbl-grade-body').innerHTML = html || '<tr><td colspan="7" class="text-center text-muted py-3">Nenhum registro encontrado</td></tr>';
+  document.getElementById('tbl-grade-body').innerHTML = html || '<tr><td colspan="8" class="text-center text-muted py-3">Nenhum registro encontrado</td></tr>';
   document.getElementById('grade-count-footer').textContent = filtered.length + ' registro(s) exibido(s)';
 }
 
@@ -1676,6 +1940,9 @@ const STORAGE_KEY = 'epol-grade-assignments';
 // alocacoes: { slotKey -> nomeServidor }
 let alocacoes = {};
 
+// Filtro multi-seleção de funções
+let mgFuncoesSelecionadas = new Set();
+
 function carregarAlocacoes() {
   if (firebaseEnabled && db) {
     carregarAlocacoesFirebase();
@@ -1709,6 +1976,27 @@ function onServidorSelect(slotKey, valor) {
   atualizarCardsMG();
 }
 
+function toggleMGFuncao(funcao) {
+  if (mgFuncoesSelecionadas.has(funcao)) {
+    mgFuncoesSelecionadas.delete(funcao);
+  } else {
+    mgFuncoesSelecionadas.add(funcao);
+  }
+  renderMontarGrade();
+}
+
+function selecionarTodasFuncoesMG() {
+  const funcoesUnicas = [...new Set(grade.map(g => g.funcao).filter(f => f))];
+  mgFuncoesSelecionadas.clear();
+  funcoesUnicas.forEach(f => mgFuncoesSelecionadas.add(f));
+  renderMontarGrade();
+}
+
+function limparFuncoesMG() {
+  mgFuncoesSelecionadas.clear();
+  renderMontarGrade();
+}
+
 function limparAlocacoes() {
   if (!confirm('Limpar todas as alocações salvas?')) return;
   alocacoes = {};
@@ -1726,20 +2014,22 @@ function distribuirEscalaAutomaticamente() {
   const confirma = confirm(
     '🤖 DISTRIBUIÇÃO AUTOMÁTICA\n\n' +
     'Esta função irá:\n' +
-    '• Identificar todas as vagas ePol em aberto\n' +
-    '• Distribuir igualmente entre os servidores disponíveis\n' +
-    '• Respeitar função (Professor/Monitor)\n' +
+    '• Identificar todas as vagas em aberto\n' +
+    '• Distribuir IGUALMENTE entre os servidores disponíveis\n' +
+    '• Respeitar função compatível\n' +
+    '• Professores PODEM atuar como Monitores\n' +
     '• Respeitar disponibilidade de data\n' +
-    '• Evitar conflitos de horário\n\n' +
+    '• Evitar conflitos de horário\n' +
+    '• Equilibrar a carga de trabalho\n\n' +
     '⚠️ As alocações manuais serão MANTIDAS.\n\n' +
     'Deseja continuar?'
   );
   
   if (!confirma) return;
   
-  // Identificar vagas ePol em aberto (sem alocação)
+  // Identificar vagas em aberto (sem alocação)
   const vagasAbertas = grade.filter(g => 
-    g && g.funcao && isEpol(g.funcao) && !alocacoes[g.slotKey]
+    g && g.funcao && !alocacoes[g.slotKey]
   );
   
   if (vagasAbertas.length === 0) {
@@ -1758,6 +2048,12 @@ function distribuirEscalaAutomaticamente() {
     return funcaoUpper.includes('MONITOR') || funcaoUpper.includes('MON');
   });
   
+  const vagasOutras = vagasAbertas.filter(g => {
+    const funcaoUpper = (g.funcao || '').toUpperCase();
+    return !(funcaoUpper.includes('PROFESSOR') || funcaoUpper.includes('PROF') ||
+             funcaoUpper.includes('MONITOR') || funcaoUpper.includes('MON'));
+  });
+  
   // Identificar servidores disponíveis por função
   const servidoresProf = servidores.filter(s => {
     const funcaoUpper = (s.funcao || '').toUpperCase();
@@ -1769,7 +2065,7 @@ function distribuirEscalaAutomaticamente() {
     return funcaoUpper.includes('MONITOR') || funcaoUpper.includes('MON');
   });
   
-  if (servidoresProf.length === 0 && servidoresMon.length === 0) {
+  if (servidores.length === 0) {
     alert('⚠️ Nenhum servidor disponível para distribuição!');
     return;
   }
@@ -1781,9 +2077,17 @@ function distribuirEscalaAutomaticamente() {
     totalAlocadas += distribuirVagasPorFuncao(vagasProf, servidoresProf);
   }
   
-  // Distribuir vagas de Monitor
-  if (vagasMon.length > 0 && servidoresMon.length > 0) {
-    totalAlocadas += distribuirVagasPorFuncao(vagasMon, servidoresMon);
+  // Distribuir vagas de Monitor (monitores + professores podem atuar como monitor)
+  if (vagasMon.length > 0) {
+    const servidoresParaMonitor = [...servidoresMon, ...servidoresProf];
+    if (servidoresParaMonitor.length > 0) {
+      totalAlocadas += distribuirVagasPorFuncao(vagasMon, servidoresParaMonitor);
+    }
+  }
+  
+  // Distribuir outras vagas (usar todos os servidores disponíveis)
+  if (vagasOutras.length > 0 && servidores.length > 0) {
+    totalAlocadas += distribuirVagasPorFuncao(vagasOutras, servidores);
   }
   
   // Salvar e atualizar interface
@@ -1891,11 +2195,12 @@ function importarGradeJSON(input) {
 }
 
 function exportarGradeCSV() {
-  const epolRows = grade.filter(g => isEpol(g.funcao));
-  if (!epolRows.length) { alert('Nenhuma vaga ePol na grade.'); return; }
+  if (!grade.length) { alert('Nenhuma vaga na grade.'); return; }
   const header = ['DATA','HORARIO','MODULO','COD_AULA','FUNCAO','SERVIDOR','TURMA'];
-  const rows = epolRows.map(g => {
-    const srv = alocacoes[g.slotKey] || g.servidor || '';
+  const rows = grade.map(g => {
+    let srv = alocacoes[g.slotKey] || g.servidor || '';
+    // Se a vaga foi marcada como ignorar, deixar em branco no CSV
+    if (srv === '[IGNORAR]') srv = '';
     return [g.data, g.horario, g.modulo, g.codAula, g.funcao, srv, g.turma]
       .map(v => '"' + (v||'').replace(/"/g,'""') + '"').join(';');
   });
@@ -1915,9 +2220,10 @@ function exportarGradeCSV() {
 function getConflitos() {
   // mapa: "data|horario|nomeServidor" -> [slotKey, ...]
   const mapa = {};
-  grade.filter(g => isEpol(g.funcao)).forEach(g => {
+  grade.forEach(g => {
     const srv = alocacoes[g.slotKey];
-    if (!srv) return;
+    // Ignorar vagas sem alocação ou marcadas como ignorar
+    if (!srv || srv === '[IGNORAR]') return;
     const k = `${g.data}|${g.horario}|${srv}`;
     if (!mapa[k]) mapa[k] = [];
     mapa[k].push(g.slotKey);
@@ -1936,10 +2242,17 @@ function atualizarConflitos() {
     const sel = row.querySelector('.slot-select');
     const badge = row.querySelector('.slot-status');
     const srv = alocacoes[key];
-    row.classList.remove('slot-row-filled','slot-row-conflict');
-    if (sel) sel.classList.remove('filled','conflict');
+    const isIgnorado = srv === '[IGNORAR]';
+    
+    row.classList.remove('slot-row-filled','slot-row-conflict','slot-row-ignorado');
+    if (sel) sel.classList.remove('filled','conflict','ignorado');
+    
     if (srv) {
-      if (conf.has(key)) {
+      if (isIgnorado) {
+        row.classList.add('slot-row-ignorado');
+        if (sel) sel.classList.add('ignorado');
+        if (badge) badge.innerHTML = '<span class="badge bg-info text-white"><i class="bi bi-dash-circle me-1"></i>Ignorado</span>';
+      } else if (conf.has(key)) {
         row.classList.add('slot-row-conflict');
         if (sel) sel.classList.add('conflict');
         if (badge) badge.innerHTML = '<span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>Conflito</span>';
@@ -1955,13 +2268,15 @@ function atualizarConflitos() {
 }
 
 function atualizarCardsMG() {
-  const epolRows = grade.filter(g => isEpol(g.funcao));
   const conf = getConflitos();
-  const filled = epolRows.filter(g => alocacoes[g.slotKey]).length;
-  const conflicts = epolRows.filter(g => conf.has(g.slotKey)).length;
-  set('mg-cnt-total', epolRows.length);
+  // Contar apenas vagas de fato preenchidas (excluir ignoradas)
+  const filled = grade.filter(g => alocacoes[g.slotKey] && alocacoes[g.slotKey] !== '[IGNORAR]').length;
+  const ignoradas = grade.filter(g => alocacoes[g.slotKey] === '[IGNORAR]').length;
+  const conflicts = grade.filter(g => conf.has(g.slotKey)).length;
+  set('mg-cnt-total', grade.length);
   set('mg-cnt-filled', filled);
-  set('mg-cnt-open', epolRows.length - filled);
+  set('mg-cnt-ignorado', ignoradas);
+  set('mg-cnt-open', grade.length - filled - ignoradas);
   set('mg-cnt-conflict', conflicts);
 }
 
@@ -1969,14 +2284,14 @@ function renderMontarGrade() {
   carregarAlocacoes();
   if (!grade.length || !servidores.length) {
     document.getElementById('tbl-montar-body').innerHTML =
-      '<tr><td colspan="8" class="text-center text-muted py-4">Carregue os arquivos na aba <strong>Carregar Arquivos</strong> para começar.</td></tr>';
+      '<tr><td colspan="9" class="text-center text-muted py-4">Carregue os arquivos na aba <strong>Carregar Arquivos</strong> para começar.</td></tr>';
     return;
   }
 
   // Preencher filtro de datas (apenas 1ª vez ou se vazio)
   const mgDtSel = document.getElementById('mg-filt-data');
   if (mgDtSel.options.length <= 1) {
-    const datas = [...new Set(grade.filter(g => isEpol(g.funcao)).map(g => g.data))].sort();
+    const datas = [...new Set(grade.map(g => g.data))].sort();
     datas.forEach(d => {
       const o = document.createElement('option');
       o.value = d; o.textContent = formatDate(d);
@@ -1984,24 +2299,89 @@ function renderMontarGrade() {
     });
   }
 
+  // Preencher filtro de funções (sempre atualizar para pegar novas funções)
+  const mgFuncMenu = document.getElementById('mg-filt-funcao-menu');
+  const funcoesUnicas = [...new Set(grade.map(g => g.funcao).filter(f => f))].sort();
+  
+  // Popular menu de funções apenas se mudou
+  const funcoesAtual = Array.from(mgFuncMenu.querySelectorAll('input[type="checkbox"]')).map(cb => cb.value).join('|');
+  const funcoesNova = funcoesUnicas.join('|');
+  
+  if (funcoesAtual !== funcoesNova) {
+    mgFuncMenu.innerHTML = '';
+    
+    // Adicionar botões de ação
+    const divActions = document.createElement('div');
+    divActions.className = 'ms-actions';
+    
+    const btnTodas = document.createElement('button');
+    btnTodas.textContent = 'Selecionar todas';
+    btnTodas.onclick = selecionarTodasFuncoesMG;
+    
+    const btnLimpar = document.createElement('button');
+    btnLimpar.textContent = 'Limpar';
+    btnLimpar.onclick = limparFuncoesMG;
+    
+    divActions.appendChild(btnTodas);
+    divActions.appendChild(btnLimpar);
+    mgFuncMenu.appendChild(divActions);
+    
+    // Adicionar checkboxes
+    funcoesUnicas.forEach(func => {
+      const divCheck = document.createElement('div');
+      divCheck.className = 'form-check';
+      
+      const checkbox = document.createElement('input');
+      checkbox.className = 'form-check-input';
+      checkbox.type = 'checkbox';
+      checkbox.value = func;
+      checkbox.id = 'mg-func-' + func.replace(/[^a-zA-Z0-9]/g, '_');
+      checkbox.checked = mgFuncoesSelecionadas.has(func);
+      checkbox.onchange = () => toggleMGFuncao(func);
+      
+      const label = document.createElement('label');
+      label.className = 'form-check-label small';
+      label.htmlFor = checkbox.id;
+      label.textContent = func;
+      
+      divCheck.appendChild(checkbox);
+      divCheck.appendChild(label);
+      mgFuncMenu.appendChild(divCheck);
+    });
+  } else {
+    // Atualizar estado dos checkboxes existentes
+    mgFuncMenu.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+      cb.checked = mgFuncoesSelecionadas.has(cb.value);
+    });
+  }
+  
+  // Atualizar label do botão de função
+  const mgFuncBtn = document.getElementById('mg-filt-funcao-lbl');
+  if (mgFuncoesSelecionadas.size === 0) {
+    mgFuncBtn.textContent = 'Todas';
+  } else if (mgFuncoesSelecionadas.size === 1) {
+    mgFuncBtn.textContent = [...mgFuncoesSelecionadas][0];
+  } else {
+    mgFuncBtn.textContent = `${mgFuncoesSelecionadas.size} selecionadas`;
+  }
+
   const dtFilt    = document.getElementById('mg-filt-data').value;
-  const funFilt   = document.getElementById('mg-filt-funcao').value;
   const statusFlt = document.getElementById('mg-filt-status').value;
   const turmFlt   = document.getElementById('mg-filt-turma').value.toLowerCase();
-  const mostrarTodos = document.getElementById('mg-mostrar-todos').checked;
 
   const conf = getConflitos();
 
   // Linhas a mostrar
   const rows = grade.filter(g => {
-    if (!mostrarTodos && !isEpol(g.funcao)) return false;
     if (dtFilt  && g.data !== dtFilt)          return false;
-    if (funFilt && g.funcao !== funFilt)        return false;
+    if (mgFuncoesSelecionadas.size > 0 && !mgFuncoesSelecionadas.has(g.funcao)) return false;
     if (turmFlt && !g.turma.toLowerCase().includes(turmFlt)) return false;
     if (statusFlt) {
       const srv = alocacoes[g.slotKey];
       if (statusFlt === 'aberto'     && srv)            return false;
-      if (statusFlt === 'preenchido' && (!srv || conf.has(g.slotKey))) return false;
+      if (statusFlt === 'preenchido' && (!srv || srv === '[IGNORAR]' || conf.has(g.slotKey))) return false;
+      if (statusFlt === 'ignorado'   && srv !== '[IGNORAR]') return false;
+      if (statusFlt === 'conflito'   && !conf.has(g.slotKey))          return false;
       if (statusFlt === 'conflito'   && !conf.has(g.slotKey))          return false;
     }
     return true;
@@ -2011,71 +2391,141 @@ function renderMontarGrade() {
   let lastGrupo = '';
 
   rows.forEach(g => {
-    const epolRow = isEpol(g.funcao);
     const srv     = alocacoes[g.slotKey] || '';
     const isConf  = conf.has(g.slotKey);
 
-    // Cabeçalho de grupo por data + horário (apenas linhas ePol)
-    if (epolRow) {
-      const grupo = g.data + '|' + g.horario;
-      if (grupo !== lastGrupo) {
-        lastGrupo = grupo;
-        html += `<tr class="grupo-header"><td colspan="8">
+    // Cabeçalho de grupo por data + horário
+    const grupo = g.data + '|' + g.horario;
+    if (grupo !== lastGrupo) {
+      lastGrupo = grupo;
+      const grupoId = grupo.replace(/[^a-zA-Z0-9]/g, '_');
+      html += `<tr class="grupo-header">
+        <td class="no-print">
+          <input type="checkbox" class="form-check-input grupo-checkbox" data-grupo="${escHtml(grupo)}" onchange="toggleGrupoMG('${escHtml(grupo)}')" title="Selecionar todos deste horário" />
+        </td>
+        <td colspan="6">
           <i class="bi bi-calendar-event me-1"></i>${formatDate(g.data)} &nbsp;
           <i class="bi bi-clock me-2"></i>${escHtml(g.horario)} &nbsp;·&nbsp; ${escHtml(g.modulo)}
-        </td></tr>`;
-      }
+        </td>
+        <td class="no-print text-center">
+          <button class="btn btn-sm btn-warning" 
+                  id="btn-ignorar-grupo-${grupoId}" 
+                  onclick="ignorarSelecionados('${escHtml(grupo)}')" 
+                  style="display:none"
+                  title="Marcar selecionados como Ignorar">
+            <i class="bi bi-dash-circle me-1"></i>Ignorar (<span id="count-grupo-${grupoId}">0</span>)
+          </button>
+        </td>
+        <td class="no-print"></td>
+      </tr>`;
     }
 
     // Servidores compatíveis com este slot:
-    // - Prof. EPOL  → apenas PROFESSOR
-    // - Monitor EPOL → MONITOR ou PROFESSOR (professor pode atuar como monitor)
+    // - Função com PROFESSOR/PROF → apenas servidores Professor
+    // - Função com MONITOR → servidores Monitor OU Professor (professor pode atuar como monitor)
+    // - Outras funções → todos os servidores disponíveis
     const dispServs = servidores.filter(s => {
-      const fOk = g.funcao === 'Prof. EPOL'
-        ? s.funcao.includes('PROFESSOR')
-        : s.funcao.includes('MONITOR') || s.funcao.includes('PROFESSOR');
-      return fOk && isDisponivelNaData(s, g.data);
+      if (!isDisponivelNaData(s, g.data)) return false;
+      
+      const funcaoVagaUpper = (g.funcao || '').toUpperCase();
+      const funcaoServUpper = (s.funcao || '').toUpperCase();
+      
+      // Se a vaga é de Professor, só mostrar servidores Professor
+      if (funcaoVagaUpper.includes('PROFESSOR') || funcaoVagaUpper.includes('PROF')) {
+        return funcaoServUpper.includes('PROFESSOR') || funcaoServUpper.includes('PROF');
+      }
+      
+      // Se a vaga é de Monitor, mostrar Monitor OU Professor
+      if (funcaoVagaUpper.includes('MONITOR') || funcaoVagaUpper.includes('MON')) {
+        return funcaoServUpper.includes('MONITOR') || funcaoServUpper.includes('MON') ||
+               funcaoServUpper.includes('PROFESSOR') || funcaoServUpper.includes('PROF');
+      }
+      
+      // Para outras funções, mostrar todos os servidores disponíveis
+      return true;
     }).sort((a, b) => {
-      // Monitores primeiro, depois professores
-      const ord = v => v.includes('MONITOR') ? 0 : 1;
+      // Ordenar por função (monitores primeiro) e depois por nome
+      const ord = v => {
+        const vUpper = (v || '').toUpperCase();
+        if (vUpper.includes('MONITOR') || vUpper.includes('MON')) return 0;
+        if (vUpper.includes('PROFESSOR') || vUpper.includes('PROF')) return 1;
+        return 2;
+      };
       return ord(a.funcao) - ord(b.funcao) || a.nome.localeCompare(b.nome);
     });
 
-    let rowCls = epolRow ? (isConf ? 'slot-row-conflict' : srv ? 'slot-row-filled' : (g.funcao === 'Prof. EPOL' ? 'slot-row-prof' : 'slot-row-mon')) : '';
+    // Definir classe da linha baseada no status
+    let rowCls = '';
+    const isIgnorado = srv === '[IGNORAR]';
+    
+    if (isConf) {
+      rowCls = 'slot-row-conflict';
+    } else if (isIgnorado) {
+      rowCls = 'slot-row-ignorado';
+    } else if (srv) {
+      rowCls = 'slot-row-filled';
+    } else {
+      // Linha em aberto - identificar se é professor/monitor para cor diferente
+      const funcaoUpper = (g.funcao || '').toUpperCase();
+      if (funcaoUpper.includes('PROFESSOR') || funcaoUpper.includes('PROF')) {
+        rowCls = 'slot-row-prof';
+      } else if (funcaoUpper.includes('MONITOR') || funcaoUpper.includes('MON')) {
+        rowCls = 'slot-row-mon';
+      }
+    }
+    
+    // Badge de status
     let statusBadge = '';
-    if (!epolRow) {
-      statusBadge = '';
-    } else if (isConf) {
+    if (isConf) {
       statusBadge = '<span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>Conflito</span>';
+    } else if (isIgnorado) {
+      statusBadge = '<span class="badge bg-info text-white"><i class="bi bi-dash-circle me-1"></i>Ignorado</span>';
     } else if (srv) {
       statusBadge = '<span class="badge bg-success"><i class="bi bi-check-lg me-1"></i>OK</span>';
     } else {
       statusBadge = '<span class="badge bg-secondary">Em aberto</span>';
     }
 
-    let funcBadge = epolRow
-      ? `<span class="badge ${g.funcao === 'Prof. EPOL' ? 'badge-professor' : 'badge-monitor'}">${escHtml(g.funcao)}</span>`
-      : escHtml(g.funcao);
+    // Badge de função
+    const funcaoUpper = (g.funcao || '').toUpperCase();
+    let funcBadge = '';
+    if (funcaoUpper.includes('PROFESSOR') || funcaoUpper.includes('PROF')) {
+      funcBadge = `<span class="badge badge-professor">${escHtml(g.funcao)}</span>`;
+    } else if (funcaoUpper.includes('MONITOR') || funcaoUpper.includes('MON')) {
+      funcBadge = `<span class="badge badge-monitor">${escHtml(g.funcao)}</span>`;
+    } else {
+      funcBadge = `<span class="badge bg-secondary">${escHtml(g.funcao)}</span>`;
+    }
 
+    // Select de servidor (agora disponível para todas as linhas)
     let serverCell = '';
-    if (epolRow) {
-      const selCls = 'slot-select form-select form-select-sm' + (isConf ? ' conflict' : srv ? ' filled' : '');
-      const key = escHtml(g.slotKey);
+    // isIgnorado já declarado acima, reutilizar
+    const selCls = 'slot-select form-select form-select-sm' + 
+                   (isConf ? ' conflict' : isIgnorado ? ' ignorado' : srv ? ' filled' : '');
+    const key = escHtml(g.slotKey);
+    
+    if (dispServs.length > 0) {
       serverCell = `<select class="${selCls}" data-key="${key}"
                       onchange="onServidorSelect('${key}', this.value)">
           <option value="">— Selecionar servidor —</option>
+          <option value="[IGNORAR]" ${srv === '[IGNORAR]' ? 'selected' : ''}>🚫 Ignorar (não preencher)</option>
           ${dispServs.map(s =>
             `<option value="${escHtml(s.nome)}" ${srv === s.nome ? 'selected' : ''}>${escHtml(s.nome)} (${escHtml(s.cargo)})</option>`
           ).join('')}
         </select>`;
-      if (!dispServs.length) {
+    } else {
+      // Se não há servidores disponíveis, mostrar o servidor já alocado (se houver) ou mensagem
+      if (g.servidor && g.servidor.trim()) {
+        serverCell = `<span class="text-muted">${escHtml(g.servidor)}</span>`;
+      } else {
         serverCell = '<span class="text-danger small"><i class="bi bi-exclamation-circle me-1"></i>Sem servidores disponíveis</span>';
       }
-    } else {
-      serverCell = escHtml(g.servidor) || '<span class="text-muted">—</span>';
     }
 
-    html += `<tr class="${rowCls}" data-slot-key="${epolRow ? escHtml(g.slotKey) : ''}">
+    html += `<tr class="${rowCls}" data-slot-key="${escHtml(g.slotKey)}" data-grupo="${escHtml(grupo)}">
+      <td class="no-print">
+        <input type="checkbox" class="form-check-input slot-checkbox" data-slot-key="${escHtml(g.slotKey)}" data-grupo="${escHtml(grupo)}" onchange="atualizarContagemSelecionados()" />
+      </td>
       <td style="font-size:.82rem">${formatDate(g.data)}</td>
       <td style="font-size:.82rem">${escHtml(g.horario)}</td>
       <td style="font-size:.82rem">${escHtml(g.modulo)}</td>
@@ -2088,10 +2538,99 @@ function renderMontarGrade() {
   });
 
   document.getElementById('tbl-montar-body').innerHTML = html ||
-    '<tr><td colspan="8" class="text-center text-muted py-3">Nenhuma vaga encontrada com os filtros selecionados.</td></tr>';
-  document.getElementById('mg-footer').textContent = rows.filter(g => isEpol(g.funcao)).length + ' vaga(s) ePol exibida(s)';
+    '<tr><td colspan="9" class="text-center text-muted py-3">Nenhuma vaga encontrada com os filtros selecionados.</td></tr>';
+  document.getElementById('mg-footer').textContent = rows.length + ' vaga(s) exibida(s)';
 
   atualizarCardsMG();
+  atualizarContagemSelecionados();
+}
+
+// ============================================================
+// SELEÇÃO MÚLTIPLA - MONTAR GRADE
+// ============================================================
+
+// Alternar seleção de todos os checkboxes de um grupo específico (dia/horário)
+function toggleGrupoMG(grupo) {
+  const grupoCheckbox = document.querySelector(`.grupo-checkbox[data-grupo="${grupo}"]`);
+  const checkboxes = document.querySelectorAll(`.slot-checkbox[data-grupo="${grupo}"]`);
+  
+  checkboxes.forEach(cb => {
+    cb.checked = grupoCheckbox.checked;
+  });
+  
+  atualizarContagemSelecionados();
+}
+
+// Atualizar contador de itens selecionados e exibir/ocultar botão
+function atualizarContagemSelecionados() {
+  // Atualizar estado dos checkboxes de grupo e botões de ignorar
+  const grupos = new Set();
+  document.querySelectorAll('.slot-checkbox').forEach(cb => {
+    grupos.add(cb.getAttribute('data-grupo'));
+  });
+  
+  grupos.forEach(grupo => {
+    const grupoId = grupo.replace(/[^a-zA-Z0-9]/g, '_');
+    const grupoCheckbox = document.querySelector(`.grupo-checkbox[data-grupo="${grupo}"]`);
+    const slotsDoGrupo = document.querySelectorAll(`.slot-checkbox[data-grupo="${grupo}"]`);
+    const slotsDoGrupoChecked = document.querySelectorAll(`.slot-checkbox[data-grupo="${grupo}"]:checked`);
+    
+    // Atualizar estado do checkbox do grupo
+    if (grupoCheckbox && slotsDoGrupo.length > 0) {
+      grupoCheckbox.checked = slotsDoGrupoChecked.length === slotsDoGrupo.length;
+      grupoCheckbox.indeterminate = slotsDoGrupoChecked.length > 0 && slotsDoGrupoChecked.length < slotsDoGrupo.length;
+    }
+    
+    // Atualizar botão de ignorar do grupo
+    const btnIgnorarGrupo = document.getElementById(`btn-ignorar-grupo-${grupoId}`);
+    const countGrupo = document.getElementById(`count-grupo-${grupoId}`);
+    
+    if (btnIgnorarGrupo && countGrupo) {
+      const countChecked = slotsDoGrupoChecked.length;
+      countGrupo.textContent = countChecked;
+      
+      if (countChecked > 0) {
+        btnIgnorarGrupo.style.display = '';
+      } else {
+        btnIgnorarGrupo.style.display = 'none';
+      }
+    }
+  });
+}
+
+// Ignorar todos os slots selecionados (de um grupo específico ou todos)
+function ignorarSelecionados(grupo) {
+  let checkboxes;
+  
+  if (grupo) {
+    // Ignorar apenas os checkboxes do grupo específico
+    checkboxes = document.querySelectorAll(`.slot-checkbox[data-grupo="${grupo}"]:checked`);
+  } else {
+    // Ignorar todos os checkboxes marcados (fallback, não usado atualmente)
+    checkboxes = document.querySelectorAll('.slot-checkbox:checked');
+  }
+  
+  if (checkboxes.length === 0) {
+    alert('Nenhum item selecionado!');
+    return;
+  }
+  
+  if (!confirm(`Tem certeza que deseja marcar ${checkboxes.length} slot(s) como IGNORAR?`)) {
+    return;
+  }
+  
+  // Marcar cada slot selecionado como [IGNORAR]
+  checkboxes.forEach(cb => {
+    const slotKey = cb.getAttribute('data-slot-key');
+    if (slotKey) {
+      alocacoes[slotKey] = '[IGNORAR]';
+    }
+  });
+  
+  // Salvar e atualizar UI
+  salvarAlocacoes();
+  renderMontarGrade();
+  mostrarToast(`${checkboxes.length} slot(s) marcado(s) como IGNORAR`);
 }
 
 // ============================================================
@@ -2651,6 +3190,52 @@ function salvarServidor() {
       
       mostrarToast('Servidor salvo localmente (Firebase offline)');
     });
+}
+
+// Limpar todos os servidores
+function limparTodosServidores() {
+  if (!servidores || servidores.length === 0) {
+    alert('Não há servidores para excluir!');
+    return;
+  }
+  
+  if (!confirm(`Tem certeza que deseja excluir TODOS os ${servidores.length} servidor(es)?\n\nEsta ação não pode ser desfeita!`)) {
+    return;
+  }
+  
+  // Confirmar novamente
+  if (!confirm('CONFIRMAÇÃO FINAL: Todos os servidores serão excluídos permanentemente!')) {
+    return;
+  }
+  
+  const totalServidores = servidores.length;
+  
+  // Excluir todos do Firebase (se disponível)
+  if (db && firebaseEnabled) {
+    const promises = servidores
+      .filter(s => s.id && s.id.length > 5)
+      .map(s => excluirServidorFirebase(s.id).catch(err => console.error('Erro ao excluir servidor do Firebase:', err)));
+    
+    Promise.all(promises).finally(() => {
+      // Limpar array
+      servidores.length = 0;
+      
+      // Limpar LocalStorage
+      localStorage.removeItem('servidores');
+      
+      // Atualizar UI
+      renderServidores();
+      renderDashboard();
+      mostrarToast(`${totalServidores} servidor(es) excluído(s) com sucesso!`);
+    });
+  } else {
+    // Sem Firebase, apenas limpar localmente
+    servidores.length = 0;
+    localStorage.removeItem('servidores');
+    renderServidores();
+    renderDashboard();
+    mostrarToast(`${totalServidores} servidor(es) excluído(s) localmente!`);
+  }
 }
 
 // Excluir servidor
