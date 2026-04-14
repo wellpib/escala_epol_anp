@@ -836,7 +836,9 @@ function parseAloc(file) {
       wb.SheetNames.forEach(sheetName => {
         const ws = wb.Sheets[sheetName];
         if (!ws) return;
-        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, dateNF: 'yyyy-mm-dd' });
+        // raw:true → datas chegam como objetos Date (cellDates:true no XLSX.read),
+        // evitando que num_fmt da célula distorça o valor antes de chegar ao parseDate
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true });
         if (rows.length < 2) return;
 
         // Encontrar a linha do cabeçalho: primeira linha que contém NOME e CARGO
@@ -1388,27 +1390,46 @@ function isEpol(funcao) {
 }
 
 function parseDate(v) {
-  if (!v) return null;
+  if (v === null || v === undefined || v === '') return null;
+
+  // Objeto Date nativo (vem de cellDates:true + raw:true no SheetJS)
+  if (v instanceof Date) {
+    if (isNaN(v.getTime())) return null;
+    const y = v.getFullYear();
+    const m = String(v.getMonth() + 1).padStart(2, '0');
+    const d = String(v.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  // Número serial do Excel (fallback quando cellDates não resolve)
+  if (typeof v === 'number') {
+    if (v < 1) return null;
+    const d = new Date(Math.round((v - 25569) * 86400 * 1000));
+    if (isNaN(d.getTime())) return null;
+    return parseDate(d); // recursão com Date object
+  }
+
   const s = v.toString().trim();
   if (!s || s === 'NaT' || s === 'nan') return null;
-  // yyyy-mm-dd or yyyy-mm-ddT...
-  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
-  // dd/mm/yyyy
-  if (/^\d{2}\/\d{2}\/\d{4}/.test(s)) {
-    const [d,m,y] = s.split('/');
+
+  // yyyy-mm-dd ou yyyy-mm-ddT...
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+
+  // dd/mm/yyyy  (formato brasileiro com espaço antes: ' 12/04/2026')
+  const m1 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m1) {
+    const [, d, m, y] = m1;
     return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
   }
-  // mm/dd/yyyy
-  if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(s)) {
-    const parts = s.split('/');
-    return `${parts[2]}-${parts[0].padStart(2,'0')}-${parts[1].padStart(2,'0')}`;
+
+  // mm-dd-yy  (formato gerado pelo num_fmt=mm-dd-yy do Excel via SheetJS raw:false)
+  const m2 = s.match(/^(\d{2})-(\d{2})-(\d{2})$/);
+  if (m2) {
+    const [, mm, dd, yy] = m2;
+    const yyyy = parseInt(yy) < 50 ? '20' + yy : '19' + yy;
+    return `${yyyy}-${mm}-${dd}`;
   }
-  // Timestamp numérico do Excel
-  const n = parseFloat(s);
-  if (!isNaN(n)) {
-    const d = new Date(Math.round((n - 25569) * 86400 * 1000));
-    return d.toISOString().slice(0,10);
-  }
+
   return null;
 }
 
