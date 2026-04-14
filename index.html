@@ -7,6 +7,11 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  
   <style>
     :root {
       --pf-azul: #003580;
@@ -88,6 +93,10 @@
     .ms-filter-menu .form-check-input { cursor: pointer; }
     /* botão ativo (tem seleção) */
     .ms-active { border-color: var(--pf-azul) !important; color: var(--pf-azul) !important; font-weight: 600; }
+
+    /* CRUD action buttons */
+    .btn-acao { padding: 1px 6px; font-size: .78rem; }
+    .cache-card { border-left: 4px solid var(--pf-dourado); background:#fff; border-radius:10px; }
 
     /* Montar Grade */
     .slot-row-prof   { background: #e3f2fd; }
@@ -323,7 +332,12 @@
 
   <!-- ===================== TAB: SERVIDORES ===================== -->
   <div id="tab-servidores" style="display:none">
-    <h5 class="section-title">Servidores Disponíveis</h5>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="section-title mb-0">Servidores Disponíveis</h5>
+      <button class="btn btn-sm" style="background:var(--pf-azul);color:#fff" onclick="abrirModalServidor()">
+        <i class="bi bi-plus-circle me-1"></i>Novo Servidor
+      </button>
+    </div>
 
     <div class="card p-3 mb-3 no-print shadow-sm">
       <div class="row g-2 align-items-end">
@@ -367,6 +381,7 @@
                 <th>Período de Disponibilidade</th>
                 <th>Lotação</th>
                 <th>Contato</th>
+                <th class="no-print" style="width:100px">Ações</th>
               </tr>
             </thead>
             <tbody id="tbl-serv-body"></tbody>
@@ -374,6 +389,76 @@
         </div>
       </div>
       <div class="card-footer text-muted small" id="serv-count-footer"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: Adicionar/Editar Servidor -->
+  <div class="modal fade" id="modalServidor" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header" style="background:var(--pf-azul);color:#fff">
+          <h5 class="modal-title" id="modalServidorTitulo">Novo Servidor</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="formServidor">
+            <input type="hidden" id="serv-id" />
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label">Nome Completo <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="serv-nome" required />
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">Cargo <span class="text-danger">*</span></label>
+                <select class="form-select" id="serv-cargo" required>
+                  <option value="">Selecione...</option>
+                  <option value="EPF">EPF - Escrivão de Polícia Federal</option>
+                  <option value="APF">APF - Agente de Polícia Federal</option>
+                  <option value="PCF">PCF - Perito Criminal Federal</option>
+                  <option value="DPF">DPF - Delegado de Polícia Federal</option>
+                  <option value="PPF">PPF - Papiloscopista Policial Federal</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">Função <span class="text-danger">*</span></label>
+                <select class="form-select" id="serv-funcao" required>
+                  <option value="">Selecione...</option>
+                  <option value="Professor">Professor</option>
+                  <option value="Monitor">Monitor</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">Lotação</label>
+                <input type="text" class="form-control" id="serv-lotacao" placeholder="Ex: SR/PF/DF" />
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">Data Início Disponibilidade</label>
+                <input type="date" class="form-control" id="serv-dtini" />
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">Data Fim Disponibilidade</label>
+                <input type="date" class="form-control" id="serv-dtfim" />
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">Telefone</label>
+                <input type="tel" class="form-control" id="serv-tel" placeholder="(61) 99999-9999" />
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">E-mail</label>
+                <input type="email" class="form-control" id="serv-email" placeholder="email@pf.gov.br" />
+              </div>
+            </div>
+            <div class="alert alert-info mt-3 mb-0">
+              <i class="bi bi-info-circle me-2"></i>
+              <small>Deixe as datas em branco para indicar disponibilidade total no período.</small>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" onclick="salvarServidor()">Salvar</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -521,6 +606,9 @@
       <i class="bi bi-floppy2-fill text-primary"></i>
       <span>As alocações são <strong>salvas automaticamente</strong> neste navegador (localStorage).</span>
       <div class="ms-auto d-flex gap-2 flex-wrap">
+        <button class="btn btn-sm btn-primary" onclick="distribuirEscalaAutomaticamente()" title="Distribuir vagas igualmente entre todos os servidores disponíveis">
+          <i class="bi bi-shuffle me-1"></i>Distribuir Automaticamente
+        </button>
         <button class="btn btn-sm btn-outline-primary" onclick="exportarGradeJSON()">
           <i class="bi bi-download me-1"></i>Exportar JSON
         </button>
@@ -884,7 +972,7 @@ function parseAloc(file) {
             nome,
             cargo:   iCargo >= 0 ? (r[iCargo]||'').toString().trim() : '',
             lotacao: iLot   >= 0 ? (r[iLot]  ||'').toString().trim() : '',
-            funcao:  iFun   >= 0 ? (r[iFun]  ||'').toString().trim().toUpperCase() : '',
+            funcao:  normalizarFuncao(iFun >= 0 ? (r[iFun]||'').toString().trim() : ''),
             dtIni,  // null = sem restrição de data
             dtFim,  // null = sem restrição de data
             tel:   iTel   >= 0 ? (r[iTel]  ||'').toString().trim() : '',
@@ -897,6 +985,10 @@ function parseAloc(file) {
 
       markLoaded('zone-aloc', 'icon-aloc', 'label-aloc', 'sub-aloc', file.name);
       addStatus('✅ Alocações carregadas: ' + servidores.length + ' servidores encontrados.', 'success');
+      
+      // Salvar servidores do Excel no Firebase
+      salvarServidoresExcelNoFirebase();
+      
       checkBothLoaded();
     } catch(err) {
       addStatus('❌ Erro ao ler Alocações: ' + err.message, 'danger');
@@ -962,6 +1054,10 @@ function parseSemana(file) {
 
       markLoaded('zone-sem', 'icon-sem', 'label-sem', 'sub-sem', file.name);
       addStatus('✅ Grade carregada: ' + grade.length + ' registros — ' + semanaLabel, 'success');
+      
+      // Salvar grade no Firebase
+      salvarGradeNoFirebase();
+      
       checkBothLoaded();
     } catch(err) {
       addStatus('❌ Erro ao ler Grade: ' + err.message, 'danger');
@@ -989,20 +1085,25 @@ function checkBothLoaded() {
 // DASHBOARD
 // ============================================================
 function renderDashboard() {
-  const epol = grade.filter(g => isEpol(g.funcao));
-  const profEpol = epol.filter(g => g.funcao.toUpperCase().includes('PROF'));
-  const monEpol  = epol.filter(g => g.funcao.toUpperCase().includes('MONITOR'));
+  if (!grade || grade.length === 0 || !servidores || servidores.length === 0) {
+    console.warn('Dashboard: aguardando dados completos');
+    return;
+  }
+  
+  const epol = grade.filter(g => g && g.funcao && isEpol(g.funcao));
+  const profEpol = epol.filter(g => g && g.funcao && g.funcao.toUpperCase().includes('PROF'));
+  const monEpol  = epol.filter(g => g && g.funcao && g.funcao.toUpperCase().includes('MONITOR'));
 
   // Datas da semana
-  const datasGrade = [...new Set(grade.map(g => g.data))].sort();
+  const datasGrade = [...new Set(grade.filter(g => g && g.data).map(g => g.data))].sort();
   const dtIni = datasGrade[0], dtFim = datasGrade[datasGrade.length-1];
 
   // Servidores disponíveis para a semana
-  const dispSemana = servidores.filter(s => isDisponivelNoIntervalo(s, dtIni, dtFim));
+  const dispSemana = servidores.filter(s => s && isDisponivelNoIntervalo(s, dtIni, dtFim));
 
   set('cnt-total-serv', dispSemana.length);
-  set('cnt-prof', dispSemana.filter(s => s.funcao.includes('PROFESSOR') || s.funcao.includes('PROF')).length);
-  set('cnt-mon', dispSemana.filter(s => s.funcao.includes('MONITOR')).length);
+  set('cnt-prof', dispSemana.filter(s => s && s.funcao && (s.funcao.includes('PROFESSOR') || s.funcao.includes('PROF'))).length);
+  set('cnt-mon', dispSemana.filter(s => s && s.funcao && s.funcao.includes('MONITOR')).length);
   set('cnt-vagas-prof', profEpol.length);
   set('cnt-vagas-mon', monEpol.length);
   set('cnt-aulas', [...new Set(grade.map(g => g.data + g.horario + g.codAula + g.turma))].length);
@@ -1083,11 +1184,17 @@ function renderServidores() {
       if (!nome.includes(nomeFilt)) return false;
     }
     return true;
+  }).sort((a, b) => {
+    // Ordenação alfabética crescente por nome
+    const nomeA = (a.nome || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    const nomeB = (b.nome || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    return nomeA.localeCompare(nomeB, 'pt-BR');
   });
 
   let html = '';
   filtered.forEach(s => {
-    const badge = s.funcao.includes('PROFESSOR') ? 'badge-professor' : (s.funcao.includes('MONITOR') ? 'badge-monitor' : 'bg-secondary');
+    const funcaoUpper = (s.funcao || '').toUpperCase();
+    const badge = funcaoUpper.includes('PROFESSOR') ? 'badge-professor' : (funcaoUpper.includes('MONITOR') ? 'badge-monitor' : 'bg-secondary');
     const periodo = s.dtIni || s.dtFim
       ? `${s.dtIni ? formatDate(s.dtIni) : '?'} → ${s.dtFim ? formatDate(s.dtFim) : '?'}`
       : '<span class="text-success">Disponibilidade total</span>';
@@ -1098,9 +1205,17 @@ function renderServidores() {
       <td>${periodo}</td>
       <td>${escHtml(s.lotacao)}</td>
       <td style="font-size:.8rem">${s.tel ? '<i class="bi bi-telephone me-1"></i>'+escHtml(s.tel)+' ' : ''}${s.email ? '<i class="bi bi-envelope me-1"></i>'+escHtml(s.email) : ''}</td>
+      <td class="no-print">
+        <button class="btn btn-sm btn-outline-primary btn-acao me-1" onclick="editarServidor('${s.id || servidores.indexOf(s)}')" title="Editar">
+          <i class="bi bi-pencil"></i>
+        </button>
+        <button class="btn btn-sm btn-outline-danger btn-acao" onclick="excluirServidor('${s.id || servidores.indexOf(s)}')" title="Excluir">
+          <i class="bi bi-trash"></i>
+        </button>
+      </td>
     </tr>`;
   });
-  document.getElementById('tbl-serv-body').innerHTML = html || '<tr><td colspan="6" class="text-center text-muted py-3">Nenhum servidor encontrado</td></tr>';
+  document.getElementById('tbl-serv-body').innerHTML = html || '<tr><td colspan="7" class="text-center text-muted py-3">Nenhum servidor encontrado</td></tr>';
   document.getElementById('serv-count-footer').textContent = filtered.length + ' servidor(es) exibido(s) de ' + servidores.length + ' total';
 }
 
@@ -1176,10 +1291,15 @@ function limparFiltrosGrade() {
 // GRADE
 // ============================================================
 function buildFilters() {
-  const datas   = [...new Set(grade.map(g => g.data))].sort();
-  const horarios = [...new Set(grade.map(g => g.horario))].sort();
-  const modulos  = [...new Set(grade.map(g => g.modulo))].filter(Boolean).sort();
-  const funcoes  = [...new Set(grade.map(g => g.funcao))].sort();
+  if (!grade || grade.length === 0) {
+    console.warn('buildFilters: Grade vazia, pulando...');
+    return;
+  }
+  
+  const datas   = [...new Set(grade.filter(g => g && g.data).map(g => g.data))].sort();
+  const horarios = [...new Set(grade.filter(g => g && g.horario).map(g => g.horario))].sort();
+  const modulos  = [...new Set(grade.filter(g => g && g.modulo).map(g => g.modulo))].filter(Boolean).sort();
+  const funcoes  = [...new Set(grade.filter(g => g && g.funcao).map(g => g.funcao))].sort();
 
   // Multi-select dropdowns da grade
   buildMultiSelectMenu('grade-filt-data',    datas,    d => formatDate(d));
@@ -1200,35 +1320,43 @@ function buildFilters() {
 }
 
 function renderGrade() {
+  if (!grade || grade.length === 0) {
+    document.getElementById('tbl-grade-body').innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Nenhuma grade carregada</td></tr>';
+    document.getElementById('epol-counters').style.display = 'none';
+    return;
+  }
+  
   const dtSel  = msGetSelected('grade-filt-data');
   const horSel = msGetSelected('grade-filt-horario');
   const modSel = msGetSelected('grade-filt-modulo');
   const funSel = msGetSelected('grade-filt-funcao');
-  const epolFilt = document.getElementById('grade-filt-epol').value;
-  const turmFilt = document.getElementById('grade-filt-turma').value.toLowerCase();
+  const epolFilt = document.getElementById('grade-filt-epol')?.value || '';
+  const turmFilt = document.getElementById('grade-filt-turma')?.value?.toLowerCase() || '';
 
   const filtered = grade.filter(g => {
+    if (!g) return false;
     if (dtSel.size  && !dtSel.has(g.data))     return false;
     if (horSel.size && !horSel.has(g.horario)) return false;
     if (modSel.size && !modSel.has(g.modulo))  return false;
     if (funSel.size && !funSel.has(g.funcao))  return false;
     if (epolFilt && !isEpol(g.funcao)) return false;
-    if (turmFilt && !g.turma.toLowerCase().includes(turmFilt)) return false;
+    if (turmFilt && g.turma && !g.turma.toLowerCase().includes(turmFilt)) return false;
     return true;
   });
 
-  const eProfOpen = filtered.filter(g => g.funcao === 'Prof. EPOL' && !g.servidor).length;
-  const eMonOpen  = filtered.filter(g => g.funcao === 'Monitor EPOL' && !g.servidor).length;
-  const eFilled   = filtered.filter(g => isEpol(g.funcao) && g.servidor).length;
-  set('epol-cnt-prof', filtered.filter(g => g.funcao === 'Prof. EPOL').length);
-  set('epol-cnt-mon', filtered.filter(g => g.funcao === 'Monitor EPOL').length);
+  const eProfOpen = filtered.filter(g => g && g.funcao === 'Prof. EPOL' && !g.servidor).length;
+  const eMonOpen  = filtered.filter(g => g && g.funcao === 'Monitor EPOL' && !g.servidor).length;
+  const eFilled   = filtered.filter(g => g && g.funcao && isEpol(g.funcao) && g.servidor).length;
+  set('epol-cnt-prof', filtered.filter(g => g && g.funcao === 'Prof. EPOL').length);
+  set('epol-cnt-mon', filtered.filter(g => g && g.funcao === 'Monitor EPOL').length);
   set('epol-cnt-filled', eFilled);
   set('epol-cnt-open', eProfOpen + eMonOpen);
-  document.getElementById('epol-counters').style.display = filtered.some(g => isEpol(g.funcao)) ? '' : 'none';
+  document.getElementById('epol-counters').style.display = filtered.some(g => g && g.funcao && isEpol(g.funcao)) ? '' : 'none';
 
   let html = '';
   filtered.forEach(g => {
-    const isEpolRow = isEpol(g.funcao);
+    if (!g) return;
+    const isEpolRow = g.funcao && isEpol(g.funcao);
     const filled = g.servidor && g.servidor.trim() !== '';
     let rowClass = isEpolRow ? (filled ? 'vaga-preenchida' : 'vaga-livre') : '';
     let funcBadge = '';
@@ -1252,12 +1380,19 @@ function renderGrade() {
 // RELATÓRIO 1: DISPONIBILIDADE
 // ============================================================
 function renderRelDisp() {
-  const dtIni = document.getElementById('rel-dt-ini').value;
-  const dtFim = document.getElementById('rel-dt-fim').value;
-  const funcFilt = document.getElementById('rel-funcao').value.toUpperCase();
+  if (!servidores || servidores.length === 0) {
+    document.getElementById('tbl-rel-disp-body').innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">Nenhum servidor carregado</td></tr>';
+    document.getElementById('rel-disp-footer').textContent = '0 servidor(es)';
+    return;
+  }
+  
+  const dtIni = document.getElementById('rel-dt-ini')?.value || '';
+  const dtFim = document.getElementById('rel-dt-fim')?.value || '';
+  const funcFilt = document.getElementById('rel-funcao')?.value?.toUpperCase() || '';
 
   const filtered = servidores.filter(s => {
-    if (funcFilt && !s.funcao.includes(funcFilt)) return false;
+    if (!s) return false;
+    if (funcFilt && s.funcao && !s.funcao.includes(funcFilt)) return false;
     if (dtIni || dtFim) {
       if (!isDisponivelNoIntervalo(s, dtIni || '1900-01-01', dtFim || '2099-12-31')) return false;
     }
@@ -1266,16 +1401,17 @@ function renderRelDisp() {
 
   let html = '';
   filtered.forEach(s => {
-    const badge = s.funcao.includes('PROFESSOR') ? 'badge-professor' : (s.funcao.includes('MONITOR') ? 'badge-monitor' : 'bg-secondary');
+    if (!s) return;
+    const badge = s.funcao && s.funcao.includes('PROFESSOR') ? 'badge-professor' : (s.funcao && s.funcao.includes('MONITOR') ? 'badge-monitor' : 'bg-secondary');
     html += `<tr>
-      <td class="fw-semibold">${escHtml(s.nome)}</td>
-      <td>${escHtml(s.cargo)}</td>
-      <td>${escHtml(s.lotacao)}</td>
+      <td class="fw-semibold">${escHtml(s.nome || '')}</td>
+      <td>${escHtml(s.cargo || '')}</td>
+      <td>${escHtml(s.lotacao || '')}</td>
       <td><span class="badge ${badge}">${escHtml(s.funcao) || 'Não definida'}</span></td>
       <td>${s.dtIni ? escHtml(formatDate(s.dtIni)) : '—'}</td>
       <td>${s.dtFim ? escHtml(formatDate(s.dtFim)) : 'Total'}</td>
-      <td>${escHtml(s.tel)}</td>
-      <td>${escHtml(s.email)}</td>
+      <td>${escHtml(s.tel || '')}</td>
+      <td>${escHtml(s.email || '')}</td>
     </tr>`;
   });
   document.getElementById('tbl-rel-disp-body').innerHTML = html || '<tr><td colspan="8" class="text-center text-muted py-3">Nenhum servidor no período</td></tr>';
@@ -1286,11 +1422,18 @@ function renderRelDisp() {
 // RELATÓRIO 2: VAGAS POR DATA
 // ============================================================
 function renderRelVagas() {
-  const dtFilt = document.getElementById('rel2-data').value;
-  const funFilt = document.getElementById('rel2-funcao').value;
+  if (!grade || grade.length === 0) {
+    document.getElementById('tbl-rel-vagas-body').innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Nenhuma grade carregada</td></tr>';
+    document.getElementById('rel-vagas-footer').textContent = '0 vaga(s)';
+    return;
+  }
+  
+  const dtFilt = document.getElementById('rel2-data')?.value || '';
+  const funFilt = document.getElementById('rel2-funcao')?.value || '';
 
   // Agrupar vagas ePol por data+horário+codAula+funcao+turma
   const filtered = grade.filter(g => {
+    if (!g) return false;
     if (dtFilt && g.data !== dtFilt) return false;
     if (funFilt && g.funcao !== funFilt) return false;
     return true;
@@ -1299,15 +1442,17 @@ function renderRelVagas() {
   // Agrupar
   const grupos = {};
   filtered.forEach(g => {
-    const key = `${g.data}|${g.horario}|${g.modulo}|${g.codAula}|${g.funcao}|${g.turma}`;
+    if (!g) return;
+    const key = `${g.data || ''}|${g.horario || ''}|${g.modulo || ''}|${g.codAula || ''}|${g.funcao || ''}|${g.turma || ''}`;
     if (!grupos[key]) grupos[key] = { ...g, qtd: 0 };
     grupos[key].qtd++;
   });
 
-  const rows = Object.values(grupos).sort((a,b) => a.data.localeCompare(b.data) || a.horario.localeCompare(b.horario));
+  const rows = Object.values(grupos).sort((a,b) => (a.data||'').localeCompare(b.data||'') || (a.horario||'').localeCompare(b.horario||''));
   let html = '';
   rows.forEach(g => {
-    const isEpolRow = isEpol(g.funcao);
+    if (!g) return;
+    const isEpolRow = g.funcao && isEpol(g.funcao);
     html += `<tr ${isEpolRow?'style="background:#fffde7"':''}>
       <td>${escHtml(formatDate(g.data))}</td>
       <td>${escHtml(g.horario)}</td>
@@ -1390,6 +1535,17 @@ function exportarCSV(tableId, filename) {
 function isEpol(funcao) {
   const f = (funcao||'').toLowerCase();
   return f.includes('epol');
+}
+
+// Normalizar valores de função para o padrão atual
+function normalizarFuncao(funcao) {
+  if (!funcao) return '';
+  const f = funcao.toUpperCase().trim();
+  // Converter variações antigas para os novos valores
+  if (f.includes('PROFESSOR')) return 'PROFESSOR';
+  if (f.includes('MONITOR')) return 'MONITOR';
+  // Valores desconhecidos retornam como estão
+  return funcao;
 }
 
 function parseDate(v) {
@@ -1521,13 +1677,22 @@ const STORAGE_KEY = 'epol-grade-assignments';
 let alocacoes = {};
 
 function carregarAlocacoes() {
-  try {
-    alocacoes = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-  } catch { alocacoes = {}; }
+  if (firebaseEnabled && db) {
+    carregarAlocacoesFirebase();
+  } else {
+    carregarAlocacoesLocal();
+  }
 }
 
 function salvarAlocacoes() {
+  // Salvar no LocalStorage
   localStorage.setItem(STORAGE_KEY, JSON.stringify(alocacoes));
+  
+  // Salvar também no Firebase se disponível
+  if (firebaseEnabled && db) {
+    salvarAlocacoesFirebase();
+  }
+  
   // Toast
   const t = document.getElementById('save-toast');
   t.classList.add('show');
@@ -1549,6 +1714,154 @@ function limparAlocacoes() {
   alocacoes = {};
   salvarAlocacoes();
   renderMontarGrade();
+}
+
+// Distribuir escala automaticamente de forma equilibrada
+function distribuirEscalaAutomaticamente() {
+  if (!grade || !grade.length || !servidores || !servidores.length) {
+    alert('⚠️ Carregue primeiro a grade semanal e o arquivo de servidores!');
+    return;
+  }
+  
+  const confirma = confirm(
+    '🤖 DISTRIBUIÇÃO AUTOMÁTICA\n\n' +
+    'Esta função irá:\n' +
+    '• Identificar todas as vagas ePol em aberto\n' +
+    '• Distribuir igualmente entre os servidores disponíveis\n' +
+    '• Respeitar função (Professor/Monitor)\n' +
+    '• Respeitar disponibilidade de data\n' +
+    '• Evitar conflitos de horário\n\n' +
+    '⚠️ As alocações manuais serão MANTIDAS.\n\n' +
+    'Deseja continuar?'
+  );
+  
+  if (!confirma) return;
+  
+  // Identificar vagas ePol em aberto (sem alocação)
+  const vagasAbertas = grade.filter(g => 
+    g && g.funcao && isEpol(g.funcao) && !alocacoes[g.slotKey]
+  );
+  
+  if (vagasAbertas.length === 0) {
+    alert('✅ Todas as vagas já estão preenchidas!');
+    return;
+  }
+  
+  // Separar vagas por função
+  const vagasProf = vagasAbertas.filter(g => {
+    const funcaoUpper = (g.funcao || '').toUpperCase();
+    return funcaoUpper.includes('PROFESSOR') || funcaoUpper.includes('PROF');
+  });
+  
+  const vagasMon = vagasAbertas.filter(g => {
+    const funcaoUpper = (g.funcao || '').toUpperCase();
+    return funcaoUpper.includes('MONITOR') || funcaoUpper.includes('MON');
+  });
+  
+  // Identificar servidores disponíveis por função
+  const servidoresProf = servidores.filter(s => {
+    const funcaoUpper = (s.funcao || '').toUpperCase();
+    return funcaoUpper.includes('PROFESSOR') || funcaoUpper.includes('PROF');
+  });
+  
+  const servidoresMon = servidores.filter(s => {
+    const funcaoUpper = (s.funcao || '').toUpperCase();
+    return funcaoUpper.includes('MONITOR') || funcaoUpper.includes('MON');
+  });
+  
+  if (servidoresProf.length === 0 && servidoresMon.length === 0) {
+    alert('⚠️ Nenhum servidor disponível para distribuição!');
+    return;
+  }
+  
+  let totalAlocadas = 0;
+  
+  // Distribuir vagas de Professor
+  if (vagasProf.length > 0 && servidoresProf.length > 0) {
+    totalAlocadas += distribuirVagasPorFuncao(vagasProf, servidoresProf);
+  }
+  
+  // Distribuir vagas de Monitor
+  if (vagasMon.length > 0 && servidoresMon.length > 0) {
+    totalAlocadas += distribuirVagasPorFuncao(vagasMon, servidoresMon);
+  }
+  
+  // Salvar e atualizar interface
+  salvarAlocacoes();
+  renderMontarGrade();
+  
+  const msg = `✅ Distribuição concluída!\n\n` +
+    `📊 Total de vagas abertas: ${vagasAbertas.length}\n` +
+    `✔️ Vagas alocadas: ${totalAlocadas}\n` +
+    `⏸️ Não alocadas: ${vagasAbertas.length - totalAlocadas}\n\n` +
+    (totalAlocadas < vagasAbertas.length 
+      ? '⚠️ Algumas vagas não foram alocadas por falta de servidores disponíveis ou conflitos de horário.'
+      : '🎉 Todas as vagas foram alocadas com sucesso!');
+  
+  alert(msg);
+}
+
+// Função auxiliar para distribuir vagas de uma função específica
+function distribuirVagasPorFuncao(vagas, servidoresDisponiveis) {
+  // Ordenar vagas por data e horário
+  vagas.sort((a, b) => {
+    const cmpData = (a.data || '').localeCompare(b.data || '');
+    if (cmpData !== 0) return cmpData;
+    return (a.horario || '').localeCompare(b.horario || '');
+  });
+  
+  // Contador de alocações por servidor (para distribuição equilibrada)
+  const contagemPorServidor = {};
+  servidoresDisponiveis.forEach(s => {
+    contagemPorServidor[s.nome] = 0;
+  });
+  
+  // Mapa de ocupação: "nomeServidor|data|horario" -> true
+  const ocupacao = {};
+  
+  // Considerar alocações já existentes
+  Object.keys(alocacoes).forEach(slotKey => {
+    const nomeServ = alocacoes[slotKey];
+    const vaga = grade.find(g => g.slotKey === slotKey);
+    if (vaga && nomeServ) {
+      const chaveOcupacao = `${nomeServ}|${vaga.data}|${vaga.horario}`;
+      ocupacao[chaveOcupacao] = true;
+      if (contagemPorServidor[nomeServ] !== undefined) {
+        contagemPorServidor[nomeServ]++;
+      }
+    }
+  });
+  
+  let alocadas = 0;
+  
+  vagas.forEach(vaga => {
+    // Encontrar servidores disponíveis para esta vaga
+    const candidatos = servidoresDisponiveis.filter(s => {
+      // Verificar disponibilidade de data
+      if (!isDisponivelNaData(s, vaga.data)) return false;
+      
+      // Verificar conflito de horário
+      const chaveOcupacao = `${s.nome}|${vaga.data}|${vaga.horario}`;
+      if (ocupacao[chaveOcupacao]) return false;
+      
+      return true;
+    });
+    
+    if (candidatos.length === 0) return; // Nenhum servidor disponível para esta vaga
+    
+    // Escolher o servidor com menos alocações (distribuição equilibrada)
+    candidatos.sort((a, b) => contagemPorServidor[a.nome] - contagemPorServidor[b.nome]);
+    const escolhido = candidatos[0];
+    
+    // Alocar
+    alocacoes[vaga.slotKey] = escolhido.nome;
+    const chaveOcupacao = `${escolhido.nome}|${vaga.data}|${vaga.horario}`;
+    ocupacao[chaveOcupacao] = true;
+    contagemPorServidor[escolhido.nome]++;
+    alocadas++;
+  });
+  
+  return alocadas;
 }
 
 // ============================================================
@@ -1781,8 +2094,667 @@ function renderMontarGrade() {
   atualizarCardsMG();
 }
 
-// Inicializar ao carregar a página
+// ============================================================
+// FIREBASE CONFIGURATION & DATABASE
+// ============================================================
+
+// IMPORTANTE: Configure suas credenciais do Firebase aqui
+// Para obter suas credenciais:
+// 1. Acesse https://console.firebase.google.com/
+// 2. Crie um novo projeto ou use um existente
+// 3. Vá em "Configurações do projeto" > "Seus aplicativos"
+// 4. Adicione um aplicativo web e copie as configurações abaixo
+const firebaseConfig = {
+  apiKey: "AIzaSyCYZR4I4qcc0YoUvxrTquNBMrasRrR0NKE",
+  authDomain: "escala-epol-anp.firebaseapp.com",
+  projectId: "escala-epol-anp",
+  storageBucket: "escala-epol-anp.firebasestorage.app",
+  messagingSenderId: "44977546828",
+  appId: "1:44977546828:web:1ee27b5368d17f563136e9"
+};
+
+let db = null;
+let firebaseEnabled = false;
+
+// Inicializa Firebase se configurado
+function initFirebase() {
+  try {
+    if (firebaseConfig.apiKey !== "SUA_API_KEY_AQUI") {
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.firestore();
+      firebaseEnabled = true;
+      console.log('Firebase conectado com sucesso!');
+      // Carregar servidores do Firebase
+      carregarServidoresFirebase();
+    } else {
+      console.warn('Firebase não configurado. Usando apenas LocalStorage.');
+      carregarServidoresLocal();
+    }
+  } catch (error) {
+    console.error('Erro ao inicializar Firebase:', error);
+    firebaseEnabled = false;
+    carregarServidoresLocal();
+  }
+}
+
+// Carregar servidores do Firebase
+function carregarServidoresFirebase() {
+  if (!db) {
+    carregarServidoresLocal();
+    return;
+  }
+  
+  db.collection('servidores').get().then(snapshot => {
+    const servidoresFirebase = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      // Garantir que todas as propriedades existem
+      servidoresFirebase.push({
+        id: doc.id,
+        nome: data.nome || '',
+        cargo: data.cargo || '',
+        lotacao: data.lotacao || '',
+        funcao: normalizarFuncao(data.funcao || ''),
+        dtIni: data.dtIni || null,
+        dtFim: data.dtFim || null,
+        tel: data.tel || '',
+        email: data.email || '',
+        origem: data.origem || 'FIREBASE'
+      });
+    });
+    
+    // Substituir array de servidores pelos dados do Firebase
+    if (servidoresFirebase.length > 0) {
+      servidores = servidoresFirebase;
+      salvarServidoresLocal();
+      console.log('Servidores carregados do Firebase:', servidoresFirebase.length);
+    } else {
+      // Se Firebase estiver vazio, tentar carregar do LocalStorage
+      carregarServidoresLocal();
+    }
+    
+    // Carregar também a última grade salva
+    carregarUltimaGradeFirebase();
+    
+  }).catch(error => {
+    console.error('Erro ao carregar do Firebase:', error);
+    carregarServidoresLocal();
+    carregarGradeLocal();
+  });
+}
+
+// Salvar/atualizar servidor no Firebase
+function salvarServidorFirebase(servidor) {
+  if (!db) return Promise.resolve();
+  
+  if (servidor.id && servidor.id.length > 5) {
+    // Atualizar existente
+    return db.collection('servidores').doc(servidor.id).set(servidor);
+  } else {
+    // Criar novo
+    return db.collection('servidores').add(servidor).then(docRef => {
+      servidor.id = docRef.id;
+      return servidor;
+    });
+  }
+}
+
+// Salvar servidores do Excel no Firebase (em lote)
+async function salvarServidoresExcelNoFirebase() {
+  if (!db) {
+    console.warn('Firebase não disponível. Servidores salvos apenas no LocalStorage.');
+    salvarServidoresLocal();
+    return;
+  }
+  
+  try {
+    addStatus('🔄 Sincronizando com Firebase...', 'info');
+    
+    // Buscar servidores já existentes no Firebase
+    const snapshot = await db.collection('servidores').get();
+    const servidoresFirebase = [];
+    snapshot.forEach(doc => {
+      servidoresFirebase.push({ id: doc.id, ...doc.data() });
+    });
+    
+    let novos = 0;
+    let atualizados = 0;
+    
+    // Processar cada servidor do Excel
+    for (const servidor of servidores) {
+      // Verificar se já existe (por nome + cargo)
+      const existente = servidoresFirebase.find(sf => 
+        sf.nome === servidor.nome && sf.cargo === servidor.cargo
+      );
+      
+      if (existente) {
+        // Atualizar existente (manter o ID do Firebase)
+        servidor.id = existente.id;
+        servidor.origem = servidor.origem || 'EXCEL';
+        await db.collection('servidores').doc(existente.id).set(servidor);
+        atualizados++;
+      } else {
+        // Criar novo
+        servidor.origem = servidor.origem || 'EXCEL';
+        const docRef = await db.collection('servidores').add(servidor);
+        servidor.id = docRef.id;
+        novos++;
+      }
+    }
+    
+    // Salvar também no LocalStorage
+    salvarServidoresLocal();
+    
+    // Feedback de sucesso
+    const msg = `✅ Firebase: ${novos} novo(s), ${atualizados} atualizado(s)`;
+    addStatus(msg, 'success');
+    mostrarToast(msg);
+    
+    console.log(`Sincronização Firebase completa: ${novos} novos, ${atualizados} atualizados`);
+    
+  } catch (error) {
+    console.error('Erro ao salvar no Firebase:', error);
+    addStatus('⚠️ Erro ao sincronizar Firebase. Dados salvos localmente.', 'warning');
+    salvarServidoresLocal();
+  }
+}
+
+// Salvar grade da semana no Firebase
+async function salvarGradeNoFirebase() {
+  if (!db) {
+    console.warn('Firebase não disponível. Grade salva apenas no LocalStorage.');
+    salvarGradeLocal();
+    return;
+  }
+  
+  if (!grade.length || !semanaLabel) {
+    console.warn('Grade vazia ou sem identificador de semana.');
+    return;
+  }
+  
+  try {
+    addStatus('🔄 Salvando grade no Firebase...', 'info');
+    
+    // Criar documento da grade com ID baseado no nome da semana
+    const gradeId = semanaLabel.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    
+    const gradeData = {
+      semana: semanaLabel,
+      dataImportacao: new Date().toISOString(),
+      totalRegistros: grade.length,
+      linhas: grade.map(g => ({
+        data: g.data,
+        turno: g.turno,
+        horario: g.horario,
+        modulo: g.modulo,
+        codAula: g.codAula,
+        funcao: g.funcao,
+        servidor: g.servidor,
+        turma: g.turma,
+        slotKey: g.slotKey
+      }))
+    };
+    
+    // Salvar ou atualizar a grade no Firebase
+    await db.collection('grades').doc(gradeId).set(gradeData);
+    
+    // Salvar também no LocalStorage
+    salvarGradeLocal();
+    
+    const msg = `✅ Grade salva no Firebase: ${grade.length} registros`;
+    addStatus(msg, 'success');
+    mostrarToast(msg);
+    
+    console.log(`Grade "${semanaLabel}" salva no Firebase com ${grade.length} registros`);
+    
+  } catch (error) {
+    console.error('Erro ao salvar grade no Firebase:', error);
+    addStatus('⚠️ Erro ao salvar grade no Firebase. Dados salvos localmente.', 'warning');
+    salvarGradeLocal();
+  }
+}
+
+// Salvar grade no LocalStorage
+function salvarGradeLocal() {
+  try {
+    const gradeData = {
+      semana: semanaLabel,
+      dataImportacao: new Date().toISOString(),
+      grade: grade
+    };
+    localStorage.setItem('grade_epol_atual', JSON.stringify(gradeData));
+    console.log('Grade salva no LocalStorage');
+  } catch (error) {
+    console.error('Erro ao salvar grade no LocalStorage:', error);
+  }
+}
+
+// Carregar grade do Firebase
+async function carregarGradeFirebase(gradeId) {
+  if (!db) return null;
+  
+  try {
+    const doc = await db.collection('grades').doc(gradeId).get();
+    if (doc.exists) {
+      const data = doc.data();
+      return data;
+    }
+    return null;
+  } catch (error) {
+    console.error('Erro ao carregar grade do Firebase:', error);
+    return null;
+  }
+}
+
+// Listar grades disponíveis no Firebase
+async function listarGradesFirebase() {
+  if (!db) return [];
+  
+  try {
+    const snapshot = await db.collection('grades').orderBy('dataImportacao', 'desc').get();
+    const grades = [];
+    snapshot.forEach(doc => {
+      grades.push({
+        id: doc.id,
+        ...doc.data()
+      });
+    });
+    return grades;
+  } catch (error) {
+    console.error('Erro ao listar grades do Firebase:', error);
+    return [];
+  }
+}
+
+// Carregar última grade salva no Firebase
+async function carregarUltimaGradeFirebase() {
+  if (!db) {
+    carregarGradeLocal();
+    return;
+  }
+  
+  try {
+    // Buscar a grade mais recente
+    const snapshot = await db.collection('grades')
+      .orderBy('dataImportacao', 'desc')
+      .limit(1)
+      .get();
+    
+    if (!snapshot.empty) {
+      const doc = snapshot.docs[0];
+      const gradeData = doc.data();
+      
+      if (gradeData && gradeData.linhas && Array.isArray(gradeData.linhas) && gradeData.linhas.length > 0) {
+        // Garantir que cada linha tem as propriedades necessárias
+        grade = gradeData.linhas.map(g => ({
+          data: g.data || '',
+          turno: g.turno || '',
+          horario: g.horario || '',
+          modulo: g.modulo || '',
+          codAula: g.codAula || '',
+          funcao: g.funcao || '',
+          servidor: g.servidor || '',
+          turma: g.turma || '',
+          slotKey: g.slotKey || ''
+        }));
+        
+        semanaLabel = gradeData.semana || 'Grade Salva';
+        
+        // Salvar no LocalStorage também
+        salvarGradeLocal();
+        
+        console.log(`Grade "${semanaLabel}" carregada do Firebase:`, grade.length, 'registros');
+        
+        // Atualizar interface se tiver servidores carregados
+        if (servidores && servidores.length > 0) {
+          checkBothLoaded();
+        }
+      }
+    } else {
+      // Se não houver grade no Firebase, tentar LocalStorage
+      console.log('Nenhuma grade encontrada no Firebase. Tentando LocalStorage...');
+      carregarGradeLocal();
+    }
+  } catch (error) {
+    console.error('Erro ao carregar grade do Firebase:', error);
+    carregarGradeLocal();
+  }
+}
+
+// Excluir servidor do Firebase
+function excluirServidorFirebase(id) {
+  if (!db || !id || id.length <= 5) return Promise.resolve();
+  return db.collection('servidores').doc(id).delete();
+}
+
+// Salvar alocações no Firebase (aba Montar Grade)
+async function salvarAlocacoesFirebase() {
+  if (!db) {
+    console.warn('Firebase não disponível. Alocações salvas apenas no LocalStorage.');
+    return;
+  }
+  
+  try {
+    // Usar um ID fixo ou baseado na semana atual
+    const alocacaoId = semanaLabel ? semanaLabel.replace(/[^a-zA-Z0-9]/g, '_') : 'alocacoes_atual';
+    
+    const alocacaoData = {
+      semana: semanaLabel || 'Sem nome',
+      dataAtualizacao: new Date().toISOString(),
+      alocacoes: alocacoes
+    };
+    
+    // Salvar ou atualizar as alocações no Firebase
+    await db.collection('alocacoes').doc(alocacaoId).set(alocacaoData);
+    
+    console.log(`Alocações salvas no Firebase: ${Object.keys(alocacoes).length} alocações`);
+    
+  } catch (error) {
+    console.error('Erro ao salvar alocações no Firebase:', error);
+  }
+}
+
+// Carregar alocações do Firebase (aba Montar Grade)
+async function carregarAlocacoesFirebase() {
+  if (!db) {
+    carregarAlocacoesLocal();
+    return;
+  }
+  
+  try {
+    const alocacaoId = semanaLabel ? semanaLabel.replace(/[^a-zA-Z0-9]/g, '_') : 'alocacoes_atual';
+    
+    const doc = await db.collection('alocacoes').doc(alocacaoId).get();
+    
+    if (doc.exists) {
+      const data = doc.data();
+      alocacoes = data.alocacoes || {};
+      
+      // Salvar também no LocalStorage
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(alocacoes));
+      
+      console.log(`Alocações carregadas do Firebase: ${Object.keys(alocacoes).length} alocações`);
+    } else {
+      console.log('Nenhuma alocação encontrada no Firebase. Tentando LocalStorage...');
+      carregarAlocacoesLocal();
+    }
+  } catch (error) {
+    console.error('Erro ao carregar alocações do Firebase:', error);
+    carregarAlocacoesLocal();
+  }
+}
+
+// Carregar alocações do LocalStorage
+function carregarAlocacoesLocal() {
+  try {
+    alocacoes = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    console.log(`Alocações carregadas do LocalStorage: ${Object.keys(alocacoes).length} alocações`);
+  } catch { 
+    alocacoes = {}; 
+  }
+}
+
+// Carregar servidores do LocalStorage
+function carregarServidoresLocal() {
+  try {
+    const stored = localStorage.getItem('servidores_epol');
+    if (stored) {
+      const servidoresLocal = JSON.parse(stored);
+      // Mesclar sem duplicar (prioriza servidores já carregados do Excel)
+      servidoresLocal.forEach(sl => {
+        const existe = servidores.find(s => 
+          s.id === sl.id || (s.nome === sl.nome && s.cargo === sl.cargo)
+        );
+        if (!existe) {
+          // Normalizar função ao carregar
+          sl.funcao = normalizarFuncao(sl.funcao || '');
+          servidores.push(sl);
+        }
+      });
+      console.log('Servidores carregados do LocalStorage:', servidoresLocal.length);
+      
+      // Atualizar interface se tiver dados
+      if (servidores.length > 0) {
+        renderServidores();
+        
+        // Carregar grade também
+        carregarGradeLocal();
+      }
+    }
+  } catch (error) {
+    console.error('Erro ao carregar do LocalStorage:', error);
+  }
+}
+
+// Salvar servidores no LocalStorage
+function salvarServidoresLocal() {
+  try {
+    localStorage.setItem('servidores_epol', JSON.stringify(servidores));
+  } catch (error) {
+    console.error('Erro ao salvar no LocalStorage:', error);
+  }
+}
+
+// ============================================================
+// CRUD DE SERVIDORES
+// ============================================================
+
+// Abre modal para adicionar novo servidor
+function abrirModalServidor() {
+  document.getElementById('modalServidorTitulo').textContent = 'Novo Servidor';
+  document.getElementById('formServidor').reset();
+  document.getElementById('serv-id').value = '';
+  
+  const modal = new bootstrap.Modal(document.getElementById('modalServidor'));
+  modal.show();
+}
+
+// Editar servidor existente
+function editarServidor(identificador) {
+  // Buscar servidor por ID ou índice
+  let servidor;
+  if (identificador.length > 5) {
+    servidor = servidores.find(s => s.id === identificador);
+  } else {
+    servidor = servidores[parseInt(identificador)];
+  }
+  
+  if (!servidor) {
+    alert('Servidor não encontrado!');
+    return;
+  }
+  
+  document.getElementById('modalServidorTitulo').textContent = 'Editar Servidor';
+  document.getElementById('serv-id').value = servidor.id || servidores.indexOf(servidor);
+  document.getElementById('serv-nome').value = servidor.nome || '';
+  document.getElementById('serv-cargo').value = servidor.cargo || '';
+  document.getElementById('serv-funcao').value = servidor.funcao || '';
+  document.getElementById('serv-lotacao').value = servidor.lotacao || '';
+  document.getElementById('serv-dtini').value = servidor.dtIni || '';
+  document.getElementById('serv-dtfim').value = servidor.dtFim || '';
+  document.getElementById('serv-tel').value = servidor.tel || '';
+  document.getElementById('serv-email').value = servidor.email || '';
+  
+  const modal = new bootstrap.Modal(document.getElementById('modalServidor'));
+  modal.show();
+}
+
+// Salvar servidor (criar ou atualizar)
+function salvarServidor() {
+  const form = document.getElementById('formServidor');
+  
+  if (!form.checkValidity()) {
+    form.reportValidity();
+    return;
+  }
+  
+  const identificador = document.getElementById('serv-id').value;
+  const servidor = {
+    nome: document.getElementById('serv-nome').value.trim(),
+    cargo: document.getElementById('serv-cargo').value.trim(),
+    funcao: document.getElementById('serv-funcao').value.trim(),
+    lotacao: document.getElementById('serv-lotacao').value.trim(),
+    dtIni: document.getElementById('serv-dtini').value || null,
+    dtFim: document.getElementById('serv-dtfim').value || null,
+    tel: document.getElementById('serv-tel').value.trim(),
+    email: document.getElementById('serv-email').value.trim(),
+    origem: 'MANUAL'
+  };
+  
+  // Verifica se é edição ou novo registro
+  if (identificador) {
+    // Editar existente
+    let index;
+    if (identificador.length > 5) {
+      servidor.id = identificador;
+      index = servidores.findIndex(s => s.id === identificador);
+    } else {
+      index = parseInt(identificador);
+      if (servidores[index]?.id) {
+        servidor.id = servidores[index].id;
+      }
+    }
+    
+    if (index >= 0) {
+      servidores[index] = servidor;
+    }
+  } else {
+    // Novo servidor
+    servidor.id = 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    servidores.push(servidor);
+  }
+  
+  // Salvar no Firebase e LocalStorage
+  salvarServidorFirebase(servidor)
+    .then(() => {
+      salvarServidoresLocal();
+      renderServidores();
+      renderDashboard();
+      
+      // Fechar modal
+      const modalEl = document.getElementById('modalServidor');
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      if (modal) modal.hide();
+      
+      mostrarToast('Servidor salvo com sucesso!');
+    })
+    .catch(error => {
+      console.error('Erro ao salvar no Firebase:', error);
+      // Mesmo com erro no Firebase, salva localmente
+      salvarServidoresLocal();
+      renderServidores();
+      renderDashboard();
+      
+      const modalEl = document.getElementById('modalServidor');
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      if (modal) modal.hide();
+      
+      mostrarToast('Servidor salvo localmente (Firebase offline)');
+    });
+}
+
+// Excluir servidor
+function excluirServidor(identificador) {
+  if (!confirm('Tem certeza que deseja excluir este servidor?')) {
+    return;
+  }
+  
+  let index, id;
+  if (identificador.length > 5) {
+    id = identificador;
+    index = servidores.findIndex(s => s.id === identificador);
+  } else {
+    index = parseInt(identificador);
+    id = servidores[index]?.id;
+  }
+  
+  if (index < 0) {
+    alert('Servidor não encontrado!');
+    return;
+  }
+  
+  // Remover do array
+  servidores.splice(index, 1);
+  
+  // Excluir do Firebase
+  excluirServidorFirebase(id)
+    .then(() => {
+      salvarServidoresLocal();
+      renderServidores();
+      renderDashboard();
+      mostrarToast('Servidor excluído com sucesso!');
+    })
+    .catch(error => {
+      console.error('Erro ao excluir do Firebase:', error);
+      salvarServidoresLocal();
+      renderServidores();
+      renderDashboard();
+      mostrarToast('Servidor excluído localmente (Firebase offline)');
+    });
+}
+
+// Mostrar toast de feedback
+function mostrarToast(mensagem) {
+  const toastEl = document.querySelector('.save-toast');
+  if (toastEl) {
+    toastEl.textContent = mensagem;
+    toastEl.classList.add('show');
+    setTimeout(() => toastEl.classList.remove('show'), 3000);
+  }
+}
+
+// ============================================================
+// ============================================================
+// INICIALIZAÇÃO
+// ============================================================
+
+// Adicionar toast container se não existir
+if (!document.querySelector('.save-toast')) {
+  const toast = document.createElement('div');
+  toast.className = 'save-toast';
+  document.body.appendChild(toast);
+}
+
+// Inicializar Firebase ao carregar (Firebase carrega dados do Firestore automaticamente)
+initFirebase();
+
+// Carregar alocações da aba "Montar Grade" do LocalStorage
 carregarAlocacoes();
+
+// Carregar grade do LocalStorage ao iniciar (fallback se Firebase falhar)
+function carregarGradeLocal() {
+  try {
+    const stored = localStorage.getItem('grade_epol_atual');
+    if (stored) {
+      const gradeData = JSON.parse(stored);
+      if (gradeData && gradeData.grade && Array.isArray(gradeData.grade) && gradeData.grade.length > 0) {
+        // Garantir que cada linha tem as propriedades necessárias
+        grade = gradeData.grade.map(g => ({
+          data: g.data || '',
+          turno: g.turno || '',
+          horario: g.horario || '',
+          modulo: g.modulo || '',
+          codAula: g.codAula || '',
+          funcao: g.funcao || '',
+          servidor: g.servidor || '',
+          turma: g.turma || '',
+          slotKey: g.slotKey || ''
+        }));
+        
+        semanaLabel = gradeData.semana || 'Grade Salva';
+        console.log('Grade carregada do LocalStorage:', grade.length, 'registros');
+        
+        // Atualizar UI se houver grade e servidores
+        if (servidores && servidores.length > 0) {
+          checkBothLoaded();
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Erro ao carregar grade do LocalStorage:', error);
+  }
+}
+
 </script>
 </body>
 </html>
