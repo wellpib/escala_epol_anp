@@ -61,6 +61,34 @@
     .vaga-livre { background: #fff9c4; border-left: 4px solid #f9a825; }
     .vaga-preenchida { background: #f1f8e9; border-left: 4px solid #388e3c; }
 
+    /* Multi-select dropdown */
+    .ms-filter-menu {
+      min-width: 210px;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+    .ms-filter-menu .ms-actions {
+      display: flex;
+      justify-content: space-between;
+      padding: 2px 4px 6px;
+      border-bottom: 1px solid #e0e0e0;
+      margin-bottom: 4px;
+    }
+    .ms-filter-menu .ms-actions button {
+      font-size: .78rem;
+      padding: 0;
+      border: none;
+      background: none;
+      color: var(--pf-azul-claro);
+      cursor: pointer;
+    }
+    .ms-filter-menu .ms-actions button:hover { text-decoration: underline; }
+    .ms-filter-menu .form-check { padding: 2px 4px 2px 28px; margin: 0; }
+    .ms-filter-menu .form-check-label { font-size: .85rem; cursor: pointer; }
+    .ms-filter-menu .form-check-input { cursor: pointer; }
+    /* botão ativo (tem seleção) */
+    .ms-active { border-color: var(--pf-azul) !important; color: var(--pf-azul) !important; font-weight: 600; }
+
     /* Print */
     @media print {
       .no-print { display: none !important; }
@@ -327,30 +355,60 @@
 
     <div class="card p-3 mb-3 no-print shadow-sm">
       <div class="row g-2 align-items-end">
+
+        <!-- Data (multi) -->
         <div class="col-12 col-sm-6 col-md-2">
           <label class="form-label small fw-semibold mb-1">Data</label>
-          <select class="form-select form-select-sm" id="grade-filt-data" onchange="renderGrade()">
-            <option value="">Todas</option>
-          </select>
+          <div class="dropdown">
+            <button class="btn btn-outline-secondary btn-sm w-100 text-start d-flex justify-content-between align-items-center"
+                    type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" id="grade-filt-data-btn">
+              <span id="grade-filt-data-lbl">Todas</span>
+              <i class="bi bi-chevron-down ms-1" style="font-size:.75rem"></i>
+            </button>
+            <div class="dropdown-menu p-2 ms-filter-menu" id="grade-filt-data-menu"></div>
+          </div>
         </div>
+
+        <!-- Horário (multi) -->
         <div class="col-12 col-sm-6 col-md-2">
           <label class="form-label small fw-semibold mb-1">Horário</label>
-          <select class="form-select form-select-sm" id="grade-filt-horario" onchange="renderGrade()">
-            <option value="">Todos</option>
-          </select>
+          <div class="dropdown">
+            <button class="btn btn-outline-secondary btn-sm w-100 text-start d-flex justify-content-between align-items-center"
+                    type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" id="grade-filt-horario-btn">
+              <span id="grade-filt-horario-lbl">Todos</span>
+              <i class="bi bi-chevron-down ms-1" style="font-size:.75rem"></i>
+            </button>
+            <div class="dropdown-menu p-2 ms-filter-menu" id="grade-filt-horario-menu"></div>
+          </div>
         </div>
+
+        <!-- Módulo (multi) -->
         <div class="col-12 col-sm-6 col-md-2">
           <label class="form-label small fw-semibold mb-1">Módulo</label>
-          <select class="form-select form-select-sm" id="grade-filt-modulo" onchange="renderGrade()">
-            <option value="">Todos</option>
-          </select>
+          <div class="dropdown">
+            <button class="btn btn-outline-secondary btn-sm w-100 text-start d-flex justify-content-between align-items-center"
+                    type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" id="grade-filt-modulo-btn">
+              <span id="grade-filt-modulo-lbl">Todos</span>
+              <i class="bi bi-chevron-down ms-1" style="font-size:.75rem"></i>
+            </button>
+            <div class="dropdown-menu p-2 ms-filter-menu" id="grade-filt-modulo-menu"></div>
+          </div>
         </div>
+
+        <!-- Função (multi) -->
         <div class="col-12 col-sm-6 col-md-2">
           <label class="form-label small fw-semibold mb-1">Função</label>
-          <select class="form-select form-select-sm" id="grade-filt-funcao" onchange="renderGrade()">
-            <option value="">Todas</option>
-          </select>
+          <div class="dropdown">
+            <button class="btn btn-outline-secondary btn-sm w-100 text-start d-flex justify-content-between align-items-center"
+                    type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" id="grade-filt-funcao-btn">
+              <span id="grade-filt-funcao-lbl">Todas</span>
+              <i class="bi bi-chevron-down ms-1" style="font-size:.75rem"></i>
+            </button>
+            <div class="dropdown-menu p-2 ms-filter-menu" id="grade-filt-funcao-menu"></div>
+          </div>
         </div>
+
+        <!-- Somente ePol -->
         <div class="col-12 col-sm-6 col-md-2">
           <label class="form-label small fw-semibold mb-1">Somente ePol</label>
           <select class="form-select form-select-sm" id="grade-filt-epol" onchange="renderGrade()">
@@ -358,10 +416,20 @@
             <option value="epol">Somente Prof./Monitor EPOL</option>
           </select>
         </div>
+
+        <!-- Turma -->
         <div class="col-12 col-sm-6 col-md-2">
           <label class="form-label small fw-semibold mb-1">Turma</label>
-          <input type="text" class="form-control form-control-sm" id="grade-filt-turma" placeholder="Ex: K (11)" oninput="renderGrade()" />
+          <input type="text" class="form-control form-control-sm" id="grade-filt-turma"
+                 placeholder="Ex: K (11)" oninput="renderGrade()" />
         </div>
+
+      </div>
+      <!-- Botão limpar filtros -->
+      <div class="mt-2 text-end">
+        <button class="btn btn-sm btn-link text-secondary p-0" onclick="limparFiltrosGrade()">
+          <i class="bi bi-x-circle me-1"></i>Limpar filtros
+        </button>
       </div>
     </div>
 
@@ -876,44 +944,113 @@ function renderServidores() {
 }
 
 // ============================================================
+// MULTI-SELECT HELPERS
+// ============================================================
+
+// Cria o conteúdo do menu de checkboxes para um filtro
+function buildMultiSelectMenu(filtId, values, labelFn) {
+  const menu = document.getElementById(filtId + '-menu');
+  if (!menu) return;
+  menu.innerHTML =
+    `<div class="ms-actions">
+       <button onclick="msSelectAll('${filtId}')">Selecionar todos</button>
+       <button onclick="msClearAll('${filtId}')">Limpar</button>
+     </div>` +
+    values.map(v =>
+      `<div class="form-check">
+         <input class="form-check-input ms-cb" type="checkbox" value="${escHtml(v)}"
+                id="cb-${filtId}-${escHtml(v)}" data-filt="${filtId}"
+                onchange="msChanged('${filtId}')" />
+         <label class="form-check-label" for="cb-${filtId}-${escHtml(v)}">
+           ${escHtml(labelFn ? labelFn(v) : v)}
+         </label>
+       </div>`
+    ).join('');
+}
+
+// Retorna Set com os valores marcados (vazio = nenhum marcado = "todos")
+function msGetSelected(filtId) {
+  const cbs = document.querySelectorAll(`#${filtId}-menu .ms-cb:checked`);
+  return new Set([...cbs].map(cb => cb.value));
+}
+
+// Atualiza o label do botão e aplica classe ativa
+function msChanged(filtId) {
+  const sel = msGetSelected(filtId);
+  const lbl = document.getElementById(filtId + '-lbl');
+  const btn = document.getElementById(filtId + '-btn');
+  if (!sel.size) {
+    lbl.textContent = filtId.includes('data') ? 'Todas' : filtId.includes('funcao') ? 'Todas' : 'Todos';
+    btn.classList.remove('ms-active');
+  } else if (sel.size === 1) {
+    const val = [...sel][0];
+    const cb  = document.querySelector(`#${filtId}-menu .ms-cb[value="${val}"]`);
+    lbl.textContent = cb ? cb.nextElementSibling.textContent.trim() : val;
+    btn.classList.add('ms-active');
+  } else {
+    lbl.textContent = sel.size + ' selecionados';
+    btn.classList.add('ms-active');
+  }
+  renderGrade();
+}
+
+function msSelectAll(filtId) {
+  document.querySelectorAll(`#${filtId}-menu .ms-cb`).forEach(cb => cb.checked = true);
+  msChanged(filtId);
+}
+
+function msClearAll(filtId) {
+  document.querySelectorAll(`#${filtId}-menu .ms-cb`).forEach(cb => cb.checked = false);
+  msChanged(filtId);
+}
+
+function limparFiltrosGrade() {
+  ['grade-filt-data','grade-filt-horario','grade-filt-modulo','grade-filt-funcao'].forEach(msClearAll);
+  document.getElementById('grade-filt-epol').value = '';
+  document.getElementById('grade-filt-turma').value = '';
+  renderGrade();
+}
+
+// ============================================================
 // GRADE
 // ============================================================
 function buildFilters() {
-  // Grade filters
-  const datas = [...new Set(grade.map(g => g.data))].sort();
+  const datas   = [...new Set(grade.map(g => g.data))].sort();
   const horarios = [...new Set(grade.map(g => g.horario))].sort();
-  const modulos = [...new Set(grade.map(g => g.modulo))].filter(Boolean).sort();
-  const funcoes = [...new Set(grade.map(g => g.funcao))].sort();
+  const modulos  = [...new Set(grade.map(g => g.modulo))].filter(Boolean).sort();
+  const funcoes  = [...new Set(grade.map(g => g.funcao))].sort();
 
-  populateSelect('grade-filt-data', datas, d => formatDate(d), d => d);
-  populateSelect('grade-filt-horario', horarios);
-  populateSelect('grade-filt-modulo', modulos);
-  populateSelect('grade-filt-funcao', funcoes);
-  populateSelect('rel2-data', datas, d => formatDate(d), d => d);
+  // Multi-select dropdowns da grade
+  buildMultiSelectMenu('grade-filt-data',    datas,    d => formatDate(d));
+  buildMultiSelectMenu('grade-filt-horario', horarios);
+  buildMultiSelectMenu('grade-filt-modulo',  modulos);
+  buildMultiSelectMenu('grade-filt-funcao',  funcoes);
+
+  // Selects simples dos relatórios
+  populateSelect('rel2-data',   datas,   d => formatDate(d), d => d);
   populateSelect('rel2-funcao', funcoes);
 
-  // Data padrão no filtro de relatório
-  const datasGrade = [...new Set(grade.map(g => g.data))].sort();
-  if (datasGrade.length) {
-    document.getElementById('rel-dt-ini').value = datasGrade[0];
-    document.getElementById('rel-dt-fim').value = datasGrade[datasGrade.length-1];
+  // Datas padrão no relatório de disponibilidade
+  if (datas.length) {
+    document.getElementById('rel-dt-ini').value = datas[0];
+    document.getElementById('rel-dt-fim').value = datas[datas.length-1];
     renderRelDisp();
   }
 }
 
 function renderGrade() {
-  const dtFilt = document.getElementById('grade-filt-data').value;
-  const horFilt = document.getElementById('grade-filt-horario').value;
-  const modFilt = document.getElementById('grade-filt-modulo').value;
-  const funFilt = document.getElementById('grade-filt-funcao').value;
+  const dtSel  = msGetSelected('grade-filt-data');
+  const horSel = msGetSelected('grade-filt-horario');
+  const modSel = msGetSelected('grade-filt-modulo');
+  const funSel = msGetSelected('grade-filt-funcao');
   const epolFilt = document.getElementById('grade-filt-epol').value;
   const turmFilt = document.getElementById('grade-filt-turma').value.toLowerCase();
 
   const filtered = grade.filter(g => {
-    if (dtFilt && g.data !== dtFilt) return false;
-    if (horFilt && g.horario !== horFilt) return false;
-    if (modFilt && g.modulo !== modFilt) return false;
-    if (funFilt && g.funcao !== funFilt) return false;
+    if (dtSel.size  && !dtSel.has(g.data))     return false;
+    if (horSel.size && !horSel.has(g.horario)) return false;
+    if (modSel.size && !modSel.has(g.modulo))  return false;
+    if (funSel.size && !funSel.has(g.funcao))  return false;
     if (epolFilt && !isEpol(g.funcao)) return false;
     if (turmFilt && !g.turma.toLowerCase().includes(turmFilt)) return false;
     return true;
