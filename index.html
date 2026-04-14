@@ -1341,7 +1341,10 @@ function renderCruzamento() {
 
   function buildCruzBody(funcFilter, vagasMap) {
     const dispServ = servidores.filter(s => {
-      const fok = funcFilter === 'PROFESSOR' ? s.funcao.includes('PROFESSOR') || s.funcao.includes('PROF') : s.funcao.includes('MONITOR');
+      // Para vagas de MONITOR: professores também são elegíveis
+      const fok = funcFilter === 'PROFESSOR'
+        ? s.funcao.includes('PROFESSOR')
+        : s.funcao.includes('MONITOR') || s.funcao.includes('PROFESSOR');
       return fok && isDisponivelNoIntervalo(s, dtIni, dtFim);
     });
     if (!dispServ.length) return '<tr><td colspan="4" class="text-center text-muted py-2">Nenhum servidor disponível no período</td></tr>';
@@ -1711,11 +1714,19 @@ function renderMontarGrade() {
       }
     }
 
-    // Servidores compatíveis com este slot
-    const tipoFun = g.funcao === 'Prof. EPOL' ? 'PROFESSOR' : 'MONITOR';
-    const dispServs = servidores.filter(s =>
-      s.funcao.includes(tipoFun) && isDisponivelNaData(s, g.data)
-    ).sort((a,b) => a.nome.localeCompare(b.nome));
+    // Servidores compatíveis com este slot:
+    // - Prof. EPOL  → apenas PROFESSOR
+    // - Monitor EPOL → MONITOR ou PROFESSOR (professor pode atuar como monitor)
+    const dispServs = servidores.filter(s => {
+      const fOk = g.funcao === 'Prof. EPOL'
+        ? s.funcao.includes('PROFESSOR')
+        : s.funcao.includes('MONITOR') || s.funcao.includes('PROFESSOR');
+      return fOk && isDisponivelNaData(s, g.data);
+    }).sort((a, b) => {
+      // Monitores primeiro, depois professores
+      const ord = v => v.includes('MONITOR') ? 0 : 1;
+      return ord(a.funcao) - ord(b.funcao) || a.nome.localeCompare(b.nome);
+    });
 
     let rowCls = epolRow ? (isConf ? 'slot-row-conflict' : srv ? 'slot-row-filled' : (g.funcao === 'Prof. EPOL' ? 'slot-row-prof' : 'slot-row-mon')) : '';
     let statusBadge = '';
