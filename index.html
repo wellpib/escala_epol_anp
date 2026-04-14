@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portal ePol — Gestão de Alocações</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --pf-azul: #003580;
+      --pf-azul-claro: #1a5fb4;
+      --pf-dourado: #c9a227;
+      --pf-cinza: #f4f6f9;
+    }
+    body { background: var(--pf-cinza); font-family: 'Segoe UI', sans-serif; }
+    .navbar-brand img { height: 40px; margin-right: 10px; }
+    .navbar { background: var(--pf-azul) !important; }
+    .navbar .nav-link { color: rgba(255,255,255,.85) !important; }
+    .navbar .nav-link.active, .navbar .nav-link:hover { color: var(--pf-dourado) !important; }
+    .navbar-brand { color: #fff !important; font-weight: 700; font-size: 1.1rem; }
+
+    /* Upload zone */
+    .upload-zone {
+      border: 2px dashed #b0bec5;
+      border-radius: 12px;
+      background: #fff;
+      transition: border-color .2s, background .2s;
+      cursor: pointer;
+      padding: 2rem;
+      text-align: center;
+    }
+    .upload-zone:hover, .upload-zone.drag-over { border-color: var(--pf-azul-claro); background: #e8f0fe; }
+    .upload-zone .bi { font-size: 2.5rem; color: #78909c; }
+    .upload-zone.loaded { border-color: #2e7d32; background: #f1f8e9; }
+    .upload-zone.loaded .bi { color: #2e7d32; }
+
+    /* Cards dashboard */
+    .stat-card { border-radius: 12px; border: none; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+    .stat-card .card-icon { font-size: 2rem; opacity: .8; }
+    .stat-card.card-azul { background: var(--pf-azul); color: #fff; }
+    .stat-card.card-verde { background: #2e7d32; color: #fff; }
+    .stat-card.card-laranja { background: #e65100; color: #fff; }
+    .stat-card.card-amarelo { background: #f57f17; color: #fff; }
+    .stat-card.card-roxo { background: #4527a0; color: #fff; }
+    .stat-card .stat-num { font-size: 2.4rem; font-weight: 700; }
+
+    /* Tabs */
+    .nav-tabs .nav-link { color: #555; border-radius: 8px 8px 0 0; }
+    .nav-tabs .nav-link.active { color: var(--pf-azul); font-weight: 600; border-bottom-color: #fff; }
+
+    /* Table */
+    .table-hover tbody tr:hover { background: #e8f0fe; }
+    .badge-professor { background: #1565c0; }
+    .badge-monitor { background: #6a1b9a; }
+    .badge-disponivel { background: #2e7d32; }
+    .badge-indisponivel { background: #b71c1c; }
+
+    /* Status vagas */
+    .vaga-livre { background: #fff9c4; border-left: 4px solid #f9a825; }
+    .vaga-preenchida { background: #f1f8e9; border-left: 4px solid #388e3c; }
+
+    /* Print */
+    @media print {
+      .no-print { display: none !important; }
+      .card { box-shadow: none !important; }
+    }
+
+    .section-title {
+      border-left: 4px solid var(--pf-dourado);
+      padding-left: .75rem;
+      margin-bottom: 1.25rem;
+      font-weight: 700;
+      color: var(--pf-azul);
+    }
+
+    #welcome-screen { min-height: 60vh; }
+    .step-circle {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--pf-azul); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 1.1rem; flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg no-print">
+  <div class="container-fluid">
+    <span class="navbar-brand">
+      <i class="bi bi-shield-fill me-2" style="color:var(--pf-dourado)"></i>
+      Portal ePol — Gestão de Alocações
+    </span>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navMenu">
+      <ul class="navbar-nav ms-auto" id="nav-tabs-list">
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-upload')"><i class="bi bi-upload me-1"></i>Carregar Arquivos</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-dashboard')"><i class="bi bi-speedometer2 me-1"></i>Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-servidores')"><i class="bi bi-people-fill me-1"></i>Servidores</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-grade')"><i class="bi bi-calendar3-week me-1"></i>Grade da Semana</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-relatorio')"><i class="bi bi-bar-chart-fill me-1"></i>Relatórios</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="container-fluid py-3 px-3 px-md-4">
+
+  <!-- ===================== TAB: UPLOAD ===================== -->
+  <div id="tab-upload">
+    <div class="row justify-content-center">
+      <div class="col-12 col-lg-10">
+
+        <div id="welcome-screen" class="d-flex flex-column justify-content-center align-items-center text-center py-5" id="welcome">
+          <i class="bi bi-shield-fill mb-3" style="font-size:4rem;color:var(--pf-azul)"></i>
+          <h2 class="fw-bold text-dark mb-1">Portal de Gestão ePol</h2>
+          <p class="text-muted mb-4" style="max-width:540px">
+            Carregue as planilhas de disponibilidade de servidores e a grade de horários da semana para gerar os relatórios de alocação.
+          </p>
+          <div class="d-flex flex-column gap-3" style="max-width:480px;width:100%;text-align:left">
+            <div class="d-flex align-items-center gap-3">
+              <div class="step-circle">1</div>
+              <div><strong>Alocações ePol.xlsx</strong> — lista de servidores disponíveis (Professores e Monitores)</div>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+              <div class="step-circle">2</div>
+              <div><strong>semana XX.csv / .xlsx</strong> — grade de horários da semana a preencher</div>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+              <div class="step-circle">3</div>
+              <div>Visualize os relatórios, filtre disponibilidade e exporte os dados</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-3 mt-2">
+          <!-- Upload Alocações -->
+          <div class="col-12 col-md-6">
+            <div class="upload-zone" id="zone-aloc" onclick="document.getElementById('file-aloc').click()"
+                 ondragover="dragOver(event,'zone-aloc')" ondragleave="dragLeave('zone-aloc')" ondrop="dropFile(event,'aloc')">
+              <i class="bi bi-file-earmark-spreadsheet" id="icon-aloc"></i>
+              <div class="mt-2 fw-semibold" id="label-aloc">Alocações ePol.xlsx</div>
+              <div class="text-muted small" id="sub-aloc">Clique ou arraste o arquivo aqui</div>
+              <input type="file" id="file-aloc" accept=".xlsx,.xls" class="d-none" onchange="loadAloc(this)" />
+            </div>
+          </div>
+          <!-- Upload Semana -->
+          <div class="col-12 col-md-6">
+            <div class="upload-zone" id="zone-sem" onclick="document.getElementById('file-sem').click()"
+                 ondragover="dragOver(event,'zone-sem')" ondragleave="dragLeave('zone-sem')" ondrop="dropFile(event,'sem')">
+              <i class="bi bi-file-earmark-text" id="icon-sem"></i>
+              <div class="mt-2 fw-semibold" id="label-sem">Semana XX.csv / .xlsx</div>
+              <div class="text-muted small" id="sub-sem">Clique ou arraste o arquivo aqui</div>
+              <input type="file" id="file-sem" accept=".csv,.xlsx,.xls" class="d-none" onchange="loadSemana(this)" />
+            </div>
+          </div>
+        </div>
+
+        <div id="load-status" class="mt-3"></div>
+
+        <div class="text-center mt-4" id="btn-go-wrap" style="display:none!important">
+          <button class="btn btn-lg px-5" style="background:var(--pf-azul);color:#fff" onclick="showTab('tab-dashboard')">
+            <i class="bi bi-arrow-right-circle me-2"></i>Ver Relatórios
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== TAB: DASHBOARD ===================== -->
+  <div id="tab-dashboard" style="display:none">
+    <h5 class="section-title">Dashboard — Resumo</h5>
+    <div class="row g-3 mb-4" id="cards-resumo">
+      <div class="col-6 col-md-4 col-xl-2">
+        <div class="card stat-card card-azul p-3">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="small opacity-75">Servidores Disponíveis</div>
+              <div class="stat-num" id="cnt-total-serv">—</div>
+            </div>
+            <i class="bi bi-people-fill card-icon"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-xl-2">
+        <div class="card stat-card card-verde p-3">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="small opacity-75">Professores ePol</div>
+              <div class="stat-num" id="cnt-prof">—</div>
+            </div>
+            <i class="bi bi-person-video3 card-icon"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-xl-2">
+        <div class="card stat-card card-roxo p-3">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="small opacity-75">Monitores ePol</div>
+              <div class="stat-num" id="cnt-mon">—</div>
+            </div>
+            <i class="bi bi-person-check-fill card-icon"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-xl-2">
+        <div class="card stat-card card-laranja p-3">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="small opacity-75">Vagas Prof. EPOL</div>
+              <div class="stat-num" id="cnt-vagas-prof">—</div>
+            </div>
+            <i class="bi bi-journal-text card-icon"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-xl-2">
+        <div class="card stat-card card-amarelo p-3">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="small opacity-75">Vagas Monitor EPOL</div>
+              <div class="stat-num" id="cnt-vagas-mon">—</div>
+            </div>
+            <i class="bi bi-journal-check card-icon"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-xl-2">
+        <div class="card stat-card p-3" style="background:#37474f;color:#fff">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="small opacity-75">Aulas na Semana</div>
+              <div class="stat-num" id="cnt-aulas">—</div>
+            </div>
+            <i class="bi bi-calendar3 card-icon"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-12 col-lg-6">
+        <div class="card p-3 shadow-sm">
+          <h6 class="section-title">Vagas ePol por Data</h6>
+          <div id="chart-vagas-data" class="mt-2"></div>
+        </div>
+      </div>
+      <div class="col-12 col-lg-6">
+        <div class="card p-3 shadow-sm">
+          <h6 class="section-title">Distribuição de Funções na Grade</h6>
+          <div id="chart-funcoes" class="mt-2"></div>
+        </div>
+      </div>
+      <div class="col-12">
+        <div class="card p-3 shadow-sm">
+          <h6 class="section-title">Servidores Disponíveis para a Semana</h6>
+          <div id="dash-serv-semana" class="mt-2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== TAB: SERVIDORES ===================== -->
+  <div id="tab-servidores" style="display:none">
+    <h5 class="section-title">Servidores Disponíveis</h5>
+
+    <div class="card p-3 mb-3 no-print shadow-sm">
+      <div class="row g-2 align-items-end">
+        <div class="col-12 col-sm-6 col-md-3">
+          <label class="form-label small fw-semibold mb-1">Função</label>
+          <select class="form-select form-select-sm" id="filt-funcao" onchange="renderServidores()">
+            <option value="">Todas</option>
+            <option value="PROFESSOR">PROFESSOR</option>
+            <option value="MONITOR">MONITOR</option>
+          </select>
+        </div>
+        <div class="col-12 col-sm-6 col-md-3">
+          <label class="form-label small fw-semibold mb-1">Origem</label>
+          <select class="form-select form-select-sm" id="filt-origem" onchange="renderServidores()">
+            <option value="">Todas</option>
+            <option value="FORA">Fora de Brasília</option>
+            <option value="BSB">De Brasília</option>
+          </select>
+        </div>
+        <div class="col-12 col-sm-6 col-md-3">
+          <label class="form-label small fw-semibold mb-1">Data disponível</label>
+          <input type="date" class="form-control form-control-sm" id="filt-data" onchange="renderServidores()" />
+        </div>
+        <div class="col-12 col-sm-6 col-md-3">
+          <label class="form-label small fw-semibold mb-1">Buscar nome</label>
+          <input type="text" class="form-control form-control-sm" id="filt-nome" placeholder="Digite o nome..." oninput="renderServidores()" />
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover table-sm mb-0" id="tbl-servidores">
+            <thead style="background:var(--pf-azul);color:#fff">
+              <tr>
+                <th>Nome</th>
+                <th>Cargo</th>
+                <th>Lotação</th>
+                <th>Função</th>
+                <th>Período de Disponibilidade</th>
+                <th>Origem</th>
+                <th>Contato</th>
+              </tr>
+            </thead>
+            <tbody id="tbl-serv-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card-footer text-muted small" id="serv-count-footer"></div>
+    </div>
+  </div>
+
+  <!-- ===================== TAB: GRADE ===================== -->
+  <div id="tab-grade" style="display:none">
+    <h5 class="section-title">Grade da Semana</h5>
+
+    <div class="card p-3 mb-3 no-print shadow-sm">
+      <div class="row g-2 align-items-end">
+        <div class="col-12 col-sm-6 col-md-2">
+          <label class="form-label small fw-semibold mb-1">Data</label>
+          <select class="form-select form-select-sm" id="grade-filt-data" onchange="renderGrade()">
+            <option value="">Todas</option>
+          </select>
+        </div>
+        <div class="col-12 col-sm-6 col-md-2">
+          <label class="form-label small fw-semibold mb-1">Horário</label>
+          <select class="form-select form-select-sm" id="grade-filt-horario" onchange="renderGrade()">
+            <option value="">Todos</option>
+          </select>
+        </div>
+        <div class="col-12 col-sm-6 col-md-2">
+          <label class="form-label small fw-semibold mb-1">Módulo</label>
+          <select class="form-select form-select-sm" id="grade-filt-modulo" onchange="renderGrade()">
+            <option value="">Todos</option>
+          </select>
+        </div>
+        <div class="col-12 col-sm-6 col-md-2">
+          <label class="form-label small fw-semibold mb-1">Função</label>
+          <select class="form-select form-select-sm" id="grade-filt-funcao" onchange="renderGrade()">
+            <option value="">Todas</option>
+          </select>
+        </div>
+        <div class="col-12 col-sm-6 col-md-2">
+          <label class="form-label small fw-semibold mb-1">Somente ePol</label>
+          <select class="form-select form-select-sm" id="grade-filt-epol" onchange="renderGrade()">
+            <option value="">Todos</option>
+            <option value="epol">Somente Prof./Monitor EPOL</option>
+          </select>
+        </div>
+        <div class="col-12 col-sm-6 col-md-2">
+          <label class="form-label small fw-semibold mb-1">Turma</label>
+          <input type="text" class="form-control form-control-sm" id="grade-filt-turma" placeholder="Ex: K (11)" oninput="renderGrade()" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Contadores ePol -->
+    <div class="row g-2 mb-3" id="epol-counters" style="display:none!important">
+      <div class="col-6 col-md-3">
+        <div class="card text-center p-2" style="background:#1565c0;color:#fff;border-radius:10px">
+          <div class="small opacity-75">Vagas Prof. EPOL</div>
+          <div style="font-size:1.8rem;font-weight:700" id="epol-cnt-prof">0</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card text-center p-2" style="background:#6a1b9a;color:#fff;border-radius:10px">
+          <div class="small opacity-75">Vagas Monitor EPOL</div>
+          <div style="font-size:1.8rem;font-weight:700" id="epol-cnt-mon">0</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card text-center p-2" style="background:#2e7d32;color:#fff;border-radius:10px">
+          <div class="small opacity-75">Já preenchidas</div>
+          <div style="font-size:1.8rem;font-weight:700" id="epol-cnt-filled">0</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card text-center p-2" style="background:#e65100;color:#fff;border-radius:10px">
+          <div class="small opacity-75">Vagas em aberto</div>
+          <div style="font-size:1.8rem;font-weight:700" id="epol-cnt-open">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover table-sm mb-0" id="tbl-grade">
+            <thead style="background:var(--pf-azul);color:#fff">
+              <tr>
+                <th>Data</th>
+                <th>Horário</th>
+                <th>Módulo</th>
+                <th>Cód. Aula</th>
+                <th>Função</th>
+                <th>Servidor</th>
+                <th>Turma</th>
+              </tr>
+            </thead>
+            <tbody id="tbl-grade-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card-footer text-muted small" id="grade-count-footer"></div>
+    </div>
+  </div>
+
+  <!-- ===================== TAB: RELATÓRIOS ===================== -->
+  <div id="tab-relatorio" style="display:none">
+    <h5 class="section-title">Relatórios</h5>
+
+    <ul class="nav nav-tabs mb-3" id="rel-tabs">
+      <li class="nav-item"><a class="nav-link active" href="#" onclick="showRel('rel-disponibilidade');return false">Disponibilidade por Período</a></li>
+      <li class="nav-item"><a class="nav-link" href="#" onclick="showRel('rel-vagas');return false">Vagas por Data e Função</a></li>
+      <li class="nav-item"><a class="nav-link" href="#" onclick="showRel('rel-cruzamento');return false">Cruzamento Vaga × Servidor</a></li>
+    </ul>
+
+    <!-- Relatório 1: Disponibilidade por período -->
+    <div id="rel-disponibilidade">
+      <div class="card p-3 mb-3 no-print shadow-sm">
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-sm-4 col-md-3">
+            <label class="form-label small fw-semibold mb-1">Data Inicial</label>
+            <input type="date" class="form-control form-control-sm" id="rel-dt-ini" onchange="renderRelDisp()" />
+          </div>
+          <div class="col-12 col-sm-4 col-md-3">
+            <label class="form-label small fw-semibold mb-1">Data Final</label>
+            <input type="date" class="form-control form-control-sm" id="rel-dt-fim" onchange="renderRelDisp()" />
+          </div>
+          <div class="col-12 col-sm-4 col-md-3">
+            <label class="form-label small fw-semibold mb-1">Função</label>
+            <select class="form-select form-select-sm" id="rel-funcao" onchange="renderRelDisp()">
+              <option value="">Todas</option>
+              <option value="PROFESSOR">PROFESSOR</option>
+              <option value="MONITOR">MONITOR</option>
+            </select>
+          </div>
+          <div class="col-12 col-md-3 d-flex gap-2">
+            <button class="btn btn-sm btn-outline-secondary w-100" onclick="exportarCSV('tbl-rel-disp','disponibilidade')">
+              <i class="bi bi-download me-1"></i>Exportar CSV
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="card shadow-sm">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0" id="tbl-rel-disp">
+              <thead style="background:var(--pf-azul);color:#fff">
+                <tr>
+                  <th>Nome</th><th>Cargo</th><th>Lotação</th><th>Função</th>
+                  <th>Data Início</th><th>Data Fim</th><th>Origem</th><th>Telefone</th><th>E-mail</th>
+                </tr>
+              </thead>
+              <tbody id="tbl-rel-disp-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card-footer text-muted small" id="rel-disp-footer"></div>
+      </div>
+    </div>
+
+    <!-- Relatório 2: Vagas por data -->
+    <div id="rel-vagas" style="display:none">
+      <div class="card p-3 mb-3 no-print shadow-sm">
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-sm-6 col-md-3">
+            <label class="form-label small fw-semibold mb-1">Filtrar Data</label>
+            <select class="form-select form-select-sm" id="rel2-data" onchange="renderRelVagas()">
+              <option value="">Todas as datas</option>
+            </select>
+          </div>
+          <div class="col-12 col-sm-6 col-md-3">
+            <label class="form-label small fw-semibold mb-1">Função</label>
+            <select class="form-select form-select-sm" id="rel2-funcao" onchange="renderRelVagas()">
+              <option value="">Todas</option>
+            </select>
+          </div>
+          <div class="col-12 col-md-3">
+            <button class="btn btn-sm btn-outline-secondary w-100" onclick="exportarCSV('tbl-rel-vagas','vagas_por_data')">
+              <i class="bi bi-download me-1"></i>Exportar CSV
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="card shadow-sm">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0" id="tbl-rel-vagas">
+              <thead style="background:var(--pf-azul);color:#fff">
+                <tr>
+                  <th>Data</th><th>Horário</th><th>Módulo</th><th>Cód. Aula</th>
+                  <th>Função</th><th>Qtd. Vagas</th><th>Turma</th>
+                </tr>
+              </thead>
+              <tbody id="tbl-rel-vagas-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card-footer text-muted small" id="rel-vagas-footer"></div>
+      </div>
+    </div>
+
+    <!-- Relatório 3: Cruzamento -->
+    <div id="rel-cruzamento" style="display:none">
+      <div class="alert alert-info no-print">
+        <i class="bi bi-info-circle me-2"></i>
+        Este relatório cruza os servidores disponíveis no período da semana com as vagas <strong>Prof. EPOL</strong> e <strong>Monitor EPOL</strong> em aberto.
+      </div>
+      <div class="row g-3" id="cruzamento-content">
+        <div class="col-12 col-lg-6">
+          <div class="card shadow-sm h-100">
+            <div class="card-header fw-bold" style="background:#1565c0;color:#fff">
+              <i class="bi bi-person-video3 me-2"></i>Professores EPOL Disponíveis × Vagas Prof. EPOL
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                  <thead class="table-light"><tr><th>Servidor</th><th>Função</th><th>Período</th><th>Datas com Vagas</th></tr></thead>
+                  <tbody id="cruz-prof-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-6">
+          <div class="card shadow-sm h-100">
+            <div class="card-header fw-bold" style="background:#6a1b9a;color:#fff">
+              <i class="bi bi-person-check-fill me-2"></i>Monitores EPOL Disponíveis × Vagas Monitor EPOL
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                  <thead class="table-light"><tr><th>Servidor</th><th>Função</th><th>Período</th><th>Datas com Vagas</th></tr></thead>
+                  <tbody id="cruz-mon-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /tab-relatorio -->
+
+</div><!-- /container -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ============================================================
+// ESTADO GLOBAL
+// ============================================================
+let servidores = [];   // [{nome, cargo, lotacao, funcao, dtIni, dtFim, origem, tel, email}]
+let grade = [];        // [{data, horario, modulo, codAula, funcao, servidor, turma}]
+let semanaLabel = '';
+
+// ============================================================
+// NAVEGAÇÃO
+// ============================================================
+function showTab(id) {
+  ['tab-upload','tab-dashboard','tab-servidores','tab-grade','tab-relatorio']
+    .forEach(t => document.getElementById(t).style.display = 'none');
+  document.getElementById(id).style.display = '';
+}
+
+function showRel(id) {
+  ['rel-disponibilidade','rel-vagas','rel-cruzamento']
+    .forEach(r => document.getElementById(r).style.display = 'none');
+  document.getElementById(id).style.display = '';
+  document.querySelectorAll('#rel-tabs .nav-link').forEach((el,i) => el.classList.remove('active'));
+  const idx = ['rel-disponibilidade','rel-vagas','rel-cruzamento'].indexOf(id);
+  document.querySelectorAll('#rel-tabs .nav-link')[idx].classList.add('active');
+  if (id === 'rel-cruzamento') renderCruzamento();
+}
+
+// ============================================================
+// DRAG & DROP
+// ============================================================
+function dragOver(e, zoneId) { e.preventDefault(); document.getElementById(zoneId).classList.add('drag-over'); }
+function dragLeave(zoneId) { document.getElementById(zoneId).classList.remove('drag-over'); }
+function dropFile(e, tipo) {
+  e.preventDefault();
+  const f = e.dataTransfer.files[0];
+  if (!f) return;
+  if (tipo === 'aloc') parseAloc(f);
+  else parseSemana(f);
+}
+
+// ============================================================
+// LOAD ALOCAÇÕES
+// ============================================================
+function loadAloc(input) { if (input.files[0]) parseAloc(input.files[0]); }
+
+function parseAloc(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
+      servidores = [];
+
+      function parseSheet(ws, origem) {
+        if (!ws) return;
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, dateNF: 'yyyy-mm-dd' });
+        // Encontrar linha de cabeçalho real (contém "NOME" ou "CARGO")
+        let hIdx = -1;
+        for (let i = 0; i < Math.min(6, rows.length); i++) {
+          const cells = rows[i].map(c => (c||'').toString().toUpperCase().trim());
+          if (cells.includes('NOME') && cells.includes('CARGO')) { hIdx = i; break; }
+        }
+        if (hIdx < 0) return;
+        const header = rows[hIdx].map(c => (c||'').toString().toUpperCase()
+          .normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim());
+        const ci = t => header.findIndex(h => h === t || h.startsWith(t));
+        const iNome = ci('NOME');
+        const iCargo = ci('CARGO');
+        const iLot = ci('LOTACAO') >= 0 ? ci('LOTACAO') : header.findIndex(h => h.startsWith('LOTA'));
+        const iFun = ci('FUNCAO') >= 0 ? ci('FUNCAO') : header.findIndex(h => h.includes('FUN'));
+        const iEmail = header.findIndex(h => h.includes('MAIL'));
+        const iTel = header.findIndex(h => h.includes('TELEFONE') || h.includes('TEL'));
+        // Para FORA: col 9 = data início, col 10 = data fim (DATAS ALOCACAO)
+        // Para BSB: col 10 = DISPONIBILIDADE (sem datas de viagem)
+        const iDtIni = 9;
+        const iDtFim = origem === 'FORA' ? 10 : -1;
+        const iDisp  = origem === 'BSB'  ? 10 : -1; // "DISPONIBILIDADE" col
+
+        for (let i = hIdx + 1; i < rows.length; i++) {
+          const r = rows[i];
+          const nome = iNome >= 0 ? (r[iNome]||'').toString().trim() : '';
+          if (!nome || nome === 'nan' || nome === 'NaN') continue;
+          // Pular cabeçalhos de seção
+          const col0 = (r[0]||'').toString().toUpperCase();
+          if (col0.includes('VIAGEM') || col0.includes('BRASILIA') || col0.includes('BRASÍLIA')) continue;
+          // BSB: pular se DISPONIBILIDADE = "Não"
+          if (origem === 'BSB' && iDisp >= 0) {
+            const disp = (r[iDisp]||'').toString().toUpperCase().trim();
+            if (disp === 'NÃO' || disp === 'NAO' || disp === 'NÃO') continue;
+          }
+          servidores.push({
+            nome,
+            cargo:   iCargo >= 0 ? (r[iCargo]||'').toString().trim() : '',
+            lotacao: iLot   >= 0 ? (r[iLot]  ||'').toString().trim() : '',
+            funcao:  iFun   >= 0 ? (r[iFun]  ||'').toString().trim().toUpperCase() : '',
+            dtIni: origem === 'FORA' ? parseDate(r[iDtIni]) : null,
+            dtFim: origem === 'FORA' ? parseDate(r[iDtFim]) : null,
+            origem,
+            tel:   iTel   >= 0 ? (r[iTel]  ||'').toString().trim() : '',
+            email: iEmail >= 0 ? (r[iEmail]||'').toString().trim() : '',
+          });
+        }
+      }
+
+      parseSheet(wb.Sheets['FORA DE BRASÍLIA'] || wb.Sheets[wb.SheetNames[0]], 'FORA');
+      parseSheet(wb.Sheets['DE BRASÍLIA']      || wb.Sheets[wb.SheetNames[1]], 'BSB');
+
+      // Deduplicar por nome + função + dtIni + dtFim
+      const seen = new Set();
+      servidores = servidores.filter(s => {
+        const key = s.nome + '|' + s.funcao + '|' + (s.dtIni||'') + '|' + (s.dtFim||'');
+        if (seen.has(key)) return false;
+        seen.add(key); return true;
+      });
+
+      markLoaded('zone-aloc', 'icon-aloc', 'label-aloc', 'sub-aloc', file.name);
+      addStatus('✅ Alocações carregadas: ' + servidores.length + ' servidores encontrados.', 'success');
+      checkBothLoaded();
+    } catch(err) {
+      addStatus('❌ Erro ao ler Alocações: ' + err.message, 'danger');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ============================================================
+// LOAD SEMANA
+// ============================================================
+function loadSemana(input) { if (input.files[0]) parseSemana(input.files[0]); }
+
+function parseSemana(file) {
+  semanaLabel = file.name.replace(/\.[^.]+$/,'');
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array', raw: false, dateNF: 'dd/mm/yyyy' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false });
+      grade = [];
+      if (rows.length < 2) throw new Error('Arquivo sem dados suficientes');
+      // Detectar header (primeira linha não vazia)
+      let headerIdx = 0;
+      for (let i = 0; i < Math.min(5, rows.length); i++) {
+        const r = rows[i].map(c => (c||'').toString().toUpperCase());
+        if (r.includes('DATA') || r.includes('FUNCAO') || r.includes('FUNÇÃO')) { headerIdx = i; break; }
+      }
+      const header = rows[headerIdx].map(c => (c||'').toString()
+        .toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim());
+      const ci = h => header.indexOf(h);
+      const iData = ci('DATA'), iHor = ci('HORARIO'), iMod = header.indexOf('MODULO') >= 0 ? header.indexOf('MODULO') : -1;
+      const iCod = header.indexOf('COD_AULA') >= 0 ? header.indexOf('COD_AULA') : header.indexOf('COD AULA');
+      const iFun = header.indexOf('FUNCAO') >= 0 ? header.indexOf('FUNCAO') : header.indexOf('FUNCAO');
+      const iServ = header.indexOf('SERVIDOR'), iTurma = header.indexOf('TURMA');
+      const iTurno = header.indexOf('TURNO');
+
+      for (let i = headerIdx + 1; i < rows.length; i++) {
+        const r = rows[i];
+        const data = iData >= 0 ? (r[iData]||'').toString().trim() : '';
+        if (!data) continue;
+        grade.push({
+          data: normalizeDate(data),
+          turno: iTurno >= 0 ? (r[iTurno]||'').toString().trim() : '',
+          horario: iHor >= 0 ? (r[iHor]||'').toString().trim() : '',
+          modulo: iMod >= 0 ? (r[iMod]||'').toString().trim() : '',
+          codAula: iCod >= 0 ? (r[iCod]||'').toString().trim() : '',
+          funcao: iFun >= 0 ? (r[iFun]||'').toString().trim() : '',
+          servidor: iServ >= 0 ? (r[iServ]||'').toString().trim() : '',
+          turma: iTurma >= 0 ? (r[iTurma]||'').toString().trim() : '',
+        });
+      }
+
+      markLoaded('zone-sem', 'icon-sem', 'label-sem', 'sub-sem', file.name);
+      addStatus('✅ Grade carregada: ' + grade.length + ' registros — ' + semanaLabel, 'success');
+      checkBothLoaded();
+    } catch(err) {
+      addStatus('❌ Erro ao ler Grade: ' + err.message, 'danger');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ============================================================
+// APÓS CARREGAR AMBOS
+// ============================================================
+function checkBothLoaded() {
+  if (grade.length && servidores.length) {
+    document.getElementById('btn-go-wrap').style.display = '';
+    buildFilters();
+    renderDashboard();
+    renderServidores();
+    renderGrade();
+    renderRelDisp();
+    renderRelVagas();
+  }
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function renderDashboard() {
+  const epol = grade.filter(g => isEpol(g.funcao));
+  const profEpol = epol.filter(g => g.funcao.toUpperCase().includes('PROF'));
+  const monEpol  = epol.filter(g => g.funcao.toUpperCase().includes('MONITOR'));
+
+  // Datas da semana
+  const datasGrade = [...new Set(grade.map(g => g.data))].sort();
+  const dtIni = datasGrade[0], dtFim = datasGrade[datasGrade.length-1];
+
+  // Servidores disponíveis para a semana
+  const dispSemana = servidores.filter(s => isDisponivelNoIntervalo(s, dtIni, dtFim));
+
+  set('cnt-total-serv', dispSemana.length);
+  set('cnt-prof', dispSemana.filter(s => s.funcao.includes('PROFESSOR') || s.funcao.includes('PROF')).length);
+  set('cnt-mon', dispSemana.filter(s => s.funcao.includes('MONITOR')).length);
+  set('cnt-vagas-prof', profEpol.length);
+  set('cnt-vagas-mon', monEpol.length);
+  set('cnt-aulas', [...new Set(grade.map(g => g.data + g.horario + g.codAula + g.turma))].length);
+
+  // Chart vagas por data
+  const vagasData = {};
+  epol.forEach(g => {
+    if (!vagasData[g.data]) vagasData[g.data] = { prof: 0, mon: 0 };
+    if (g.funcao.toUpperCase().includes('PROF')) vagasData[g.data].prof++;
+    else vagasData[g.data].mon++;
+  });
+  let chartHtml = '<div style="overflow-x:auto"><table class="table table-sm table-bordered"><thead class="table-light"><tr><th>Data</th><th>Prof. EPOL</th><th>Monitor EPOL</th><th>Total</th><th>Barra</th></tr></thead><tbody>';
+  const maxVal = Math.max(...Object.values(vagasData).map(v => v.prof + v.mon), 1);
+  Object.entries(vagasData).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([dt, v]) => {
+    const tot = v.prof + v.mon;
+    const pct = Math.round(tot/maxVal*100);
+    chartHtml += `<tr><td>${formatDate(dt)}</td><td><span class="badge badge-professor">${v.prof}</span></td><td><span class="badge badge-monitor">${v.mon}</span></td><td><strong>${tot}</strong></td><td><div class="progress" style="min-width:80px"><div class="progress-bar" style="width:${pct}%;background:var(--pf-azul)"></div></div></td></tr>`;
+  });
+  chartHtml += '</tbody></table></div>';
+  document.getElementById('chart-vagas-data').innerHTML = chartHtml;
+
+  // Chart funções
+  const funcCount = {};
+  grade.forEach(g => { funcCount[g.funcao] = (funcCount[g.funcao]||0)+1; });
+  const sorted = Object.entries(funcCount).sort((a,b)=>b[1]-a[1]);
+  const maxF = Math.max(...sorted.map(x=>x[1]),1);
+  let funcHtml = '<div style="overflow-x:auto"><table class="table table-sm"><tbody>';
+  sorted.forEach(([f,c]) => {
+    const pct = Math.round(c/maxF*100);
+    const isEpolFn = f.toUpperCase().includes('EPOL');
+    funcHtml += `<tr><td style="width:160px;font-size:.85rem">${f}</td><td style="width:40px" class="text-end"><strong>${c}</strong></td><td><div class="progress"><div class="progress-bar ${isEpolFn?'bg-warning':'bg-primary'}" style="width:${pct}%"></div></div></td></tr>`;
+  });
+  funcHtml += '</tbody></table></div>';
+  document.getElementById('chart-funcoes').innerHTML = funcHtml;
+
+  // Servidores da semana
+  let servHtml = '';
+  if (!dispSemana.length) {
+    servHtml = '<p class="text-muted">Nenhum servidor disponível encontrado para o período da grade.</p>';
+  } else {
+    servHtml = '<div class="row g-2">';
+    dispSemana.forEach(s => {
+      const badge = s.funcao.includes('PROFESSOR') ? 'badge-professor' : 'badge-monitor';
+      const origBadge = s.origem === 'BSB' ? 'bg-secondary' : 'bg-info text-dark';
+      servHtml += `<div class="col-12 col-md-6 col-xl-4">
+        <div class="card p-2 h-100" style="border-left:3px solid ${s.funcao.includes('PROFESSOR')?'#1565c0':'#6a1b9a'}">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="fw-semibold small">${escHtml(s.nome)}</div>
+            <span class="badge ${badge} ms-2">${escHtml(s.funcao)}</span>
+          </div>
+          <div class="text-muted" style="font-size:.78rem">${escHtml(s.cargo)} | ${escHtml(s.lotacao)}</div>
+          <div style="font-size:.78rem">${s.dtIni||'—'} → ${s.dtFim||'—'} <span class="badge ${origBadge} ms-1">${s.origem==='BSB'?'Brasília':'Fora BSB'}</span></div>
+        </div>
+      </div>`;
+    });
+    servHtml += '</div>';
+  }
+  document.getElementById('dash-serv-semana').innerHTML = servHtml;
+}
+
+// ============================================================
+// SERVIDORES
+// ============================================================
+function renderServidores() {
+  const funcFilt = document.getElementById('filt-funcao').value.toUpperCase();
+  const origFilt = document.getElementById('filt-origem').value;
+  const dataFilt = document.getElementById('filt-data').value; // yyyy-mm-dd
+  const nomeFilt = document.getElementById('filt-nome').value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+
+  const filtered = servidores.filter(s => {
+    if (funcFilt && !s.funcao.includes(funcFilt)) return false;
+    if (origFilt && s.origem !== origFilt) return false;
+    if (dataFilt && !isDisponivelNaData(s, dataFilt)) return false;
+    if (nomeFilt) {
+      const nome = s.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+      if (!nome.includes(nomeFilt)) return false;
+    }
+    return true;
+  });
+
+  let html = '';
+  filtered.forEach(s => {
+    const badge = s.funcao.includes('PROFESSOR') ? 'badge-professor' : (s.funcao.includes('MONITOR') ? 'badge-monitor' : 'bg-secondary');
+    const origBadge = s.origem === 'BSB' ? 'bg-secondary' : 'bg-info text-dark';
+    html += `<tr>
+      <td class="fw-semibold">${escHtml(s.nome)}</td>
+      <td>${escHtml(s.cargo)}</td>
+      <td>${escHtml(s.lotacao)}</td>
+      <td><span class="badge ${badge}">${escHtml(s.funcao)}</span></td>
+      <td>${s.dtIni ? escHtml(formatDate(s.dtIni)) : '—'} ${s.dtFim ? ' → ' + escHtml(formatDate(s.dtFim)) : ''}</td>
+      <td><span class="badge ${origBadge}">${s.origem==='BSB'?'Brasília':'Fora BSB'}</span></td>
+      <td style="font-size:.8rem">${s.tel ? '<i class="bi bi-telephone me-1"></i>'+escHtml(s.tel)+' ' : ''}${s.email ? '<i class="bi bi-envelope me-1"></i>'+escHtml(s.email) : ''}</td>
+    </tr>`;
+  });
+  document.getElementById('tbl-serv-body').innerHTML = html || '<tr><td colspan="7" class="text-center text-muted py-3">Nenhum servidor encontrado</td></tr>';
+  document.getElementById('serv-count-footer').textContent = filtered.length + ' servidor(es) exibido(s) de ' + servidores.length + ' total';
+}
+
+// ============================================================
+// GRADE
+// ============================================================
+function buildFilters() {
+  // Grade filters
+  const datas = [...new Set(grade.map(g => g.data))].sort();
+  const horarios = [...new Set(grade.map(g => g.horario))].sort();
+  const modulos = [...new Set(grade.map(g => g.modulo))].filter(Boolean).sort();
+  const funcoes = [...new Set(grade.map(g => g.funcao))].sort();
+
+  populateSelect('grade-filt-data', datas, d => formatDate(d), d => d);
+  populateSelect('grade-filt-horario', horarios);
+  populateSelect('grade-filt-modulo', modulos);
+  populateSelect('grade-filt-funcao', funcoes);
+  populateSelect('rel2-data', datas, d => formatDate(d), d => d);
+  populateSelect('rel2-funcao', funcoes);
+
+  // Data padrão no filtro de relatório
+  const datasGrade = [...new Set(grade.map(g => g.data))].sort();
+  if (datasGrade.length) {
+    document.getElementById('rel-dt-ini').value = datasGrade[0];
+    document.getElementById('rel-dt-fim').value = datasGrade[datasGrade.length-1];
+    renderRelDisp();
+  }
+}
+
+function renderGrade() {
+  const dtFilt = document.getElementById('grade-filt-data').value;
+  const horFilt = document.getElementById('grade-filt-horario').value;
+  const modFilt = document.getElementById('grade-filt-modulo').value;
+  const funFilt = document.getElementById('grade-filt-funcao').value;
+  const epolFilt = document.getElementById('grade-filt-epol').value;
+  const turmFilt = document.getElementById('grade-filt-turma').value.toLowerCase();
+
+  const filtered = grade.filter(g => {
+    if (dtFilt && g.data !== dtFilt) return false;
+    if (horFilt && g.horario !== horFilt) return false;
+    if (modFilt && g.modulo !== modFilt) return false;
+    if (funFilt && g.funcao !== funFilt) return false;
+    if (epolFilt && !isEpol(g.funcao)) return false;
+    if (turmFilt && !g.turma.toLowerCase().includes(turmFilt)) return false;
+    return true;
+  });
+
+  const eProfOpen = filtered.filter(g => g.funcao === 'Prof. EPOL' && !g.servidor).length;
+  const eMonOpen  = filtered.filter(g => g.funcao === 'Monitor EPOL' && !g.servidor).length;
+  const eFilled   = filtered.filter(g => isEpol(g.funcao) && g.servidor).length;
+  set('epol-cnt-prof', filtered.filter(g => g.funcao === 'Prof. EPOL').length);
+  set('epol-cnt-mon', filtered.filter(g => g.funcao === 'Monitor EPOL').length);
+  set('epol-cnt-filled', eFilled);
+  set('epol-cnt-open', eProfOpen + eMonOpen);
+  document.getElementById('epol-counters').style.display = filtered.some(g => isEpol(g.funcao)) ? '' : 'none';
+
+  let html = '';
+  filtered.forEach(g => {
+    const isEpolRow = isEpol(g.funcao);
+    const filled = g.servidor && g.servidor.trim() !== '';
+    let rowClass = isEpolRow ? (filled ? 'vaga-preenchida' : 'vaga-livre') : '';
+    let funcBadge = '';
+    if (g.funcao === 'Prof. EPOL') funcBadge = '<span class="badge badge-professor ms-1">EPOL</span>';
+    else if (g.funcao === 'Monitor EPOL') funcBadge = '<span class="badge badge-monitor ms-1">EPOL</span>';
+    html += `<tr class="${rowClass}">
+      <td>${escHtml(formatDate(g.data))}</td>
+      <td>${escHtml(g.horario)}</td>
+      <td>${escHtml(g.modulo)}</td>
+      <td>${escHtml(g.codAula)}</td>
+      <td>${escHtml(g.funcao)}${funcBadge}</td>
+      <td>${filled ? escHtml(g.servidor) : '<span class="text-warning"><i class="bi bi-exclamation-circle me-1"></i>Em aberto</span>'}</td>
+      <td>${escHtml(g.turma)}</td>
+    </tr>`;
+  });
+  document.getElementById('tbl-grade-body').innerHTML = html || '<tr><td colspan="7" class="text-center text-muted py-3">Nenhum registro encontrado</td></tr>';
+  document.getElementById('grade-count-footer').textContent = filtered.length + ' registro(s) exibido(s)';
+}
+
+// ============================================================
+// RELATÓRIO 1: DISPONIBILIDADE
+// ============================================================
+function renderRelDisp() {
+  const dtIni = document.getElementById('rel-dt-ini').value;
+  const dtFim = document.getElementById('rel-dt-fim').value;
+  const funcFilt = document.getElementById('rel-funcao').value.toUpperCase();
+
+  const filtered = servidores.filter(s => {
+    if (funcFilt && !s.funcao.includes(funcFilt)) return false;
+    if (dtIni || dtFim) {
+      if (!isDisponivelNoIntervalo(s, dtIni || '1900-01-01', dtFim || '2099-12-31')) return false;
+    }
+    return true;
+  });
+
+  let html = '';
+  filtered.forEach(s => {
+    const badge = s.funcao.includes('PROFESSOR') ? 'badge-professor' : (s.funcao.includes('MONITOR') ? 'badge-monitor' : 'bg-secondary');
+    html += `<tr>
+      <td class="fw-semibold">${escHtml(s.nome)}</td>
+      <td>${escHtml(s.cargo)}</td>
+      <td>${escHtml(s.lotacao)}</td>
+      <td><span class="badge ${badge}">${escHtml(s.funcao)}</span></td>
+      <td>${s.dtIni ? escHtml(formatDate(s.dtIni)) : '—'}</td>
+      <td>${s.dtFim ? escHtml(formatDate(s.dtFim)) : '—'}</td>
+      <td>${s.origem === 'BSB' ? 'Brasília' : 'Fora BSB'}</td>
+      <td>${escHtml(s.tel)}</td>
+      <td>${escHtml(s.email)}</td>
+    </tr>`;
+  });
+  document.getElementById('tbl-rel-disp-body').innerHTML = html || '<tr><td colspan="9" class="text-center text-muted py-3">Nenhum servidor no período</td></tr>';
+  document.getElementById('rel-disp-footer').textContent = filtered.length + ' servidor(es)';
+}
+
+// ============================================================
+// RELATÓRIO 2: VAGAS POR DATA
+// ============================================================
+function renderRelVagas() {
+  const dtFilt = document.getElementById('rel2-data').value;
+  const funFilt = document.getElementById('rel2-funcao').value;
+
+  // Agrupar vagas ePol por data+horário+codAula+funcao+turma
+  const filtered = grade.filter(g => {
+    if (dtFilt && g.data !== dtFilt) return false;
+    if (funFilt && g.funcao !== funFilt) return false;
+    return true;
+  });
+
+  // Agrupar
+  const grupos = {};
+  filtered.forEach(g => {
+    const key = `${g.data}|${g.horario}|${g.modulo}|${g.codAula}|${g.funcao}|${g.turma}`;
+    if (!grupos[key]) grupos[key] = { ...g, qtd: 0 };
+    grupos[key].qtd++;
+  });
+
+  const rows = Object.values(grupos).sort((a,b) => a.data.localeCompare(b.data) || a.horario.localeCompare(b.horario));
+  let html = '';
+  rows.forEach(g => {
+    const isEpolRow = isEpol(g.funcao);
+    html += `<tr ${isEpolRow?'style="background:#fffde7"':''}>
+      <td>${escHtml(formatDate(g.data))}</td>
+      <td>${escHtml(g.horario)}</td>
+      <td>${escHtml(g.modulo)}</td>
+      <td>${escHtml(g.codAula)}</td>
+      <td>${escHtml(g.funcao)}${isEpolRow ? ' <span class="badge bg-warning text-dark">EPOL</span>' : ''}</td>
+      <td class="text-center fw-bold">${g.qtd}</td>
+      <td>${escHtml(g.turma)}</td>
+    </tr>`;
+  });
+  document.getElementById('tbl-rel-vagas-body').innerHTML = html || '<tr><td colspan="7" class="text-center text-muted py-3">Nenhum dado</td></tr>';
+  document.getElementById('rel-vagas-footer').textContent = rows.length + ' linha(s)';
+}
+
+// ============================================================
+// RELATÓRIO 3: CRUZAMENTO
+// ============================================================
+function renderCruzamento() {
+  const datasGrade = [...new Set(grade.map(g => g.data))].sort();
+  const dtIni = datasGrade[0] || '', dtFim = datasGrade[datasGrade.length-1] || '';
+
+  // Vagas em aberto por data
+  const vagasProfData = {};
+  const vagasMonData = {};
+  grade.filter(g => g.funcao === 'Prof. EPOL' && !g.servidor).forEach(g => {
+    vagasProfData[g.data] = (vagasProfData[g.data]||0)+1;
+  });
+  grade.filter(g => g.funcao === 'Monitor EPOL' && !g.servidor).forEach(g => {
+    vagasMonData[g.data] = (vagasMonData[g.data]||0)+1;
+  });
+
+  function buildCruzBody(funcFilter, vagasMap) {
+    const dispServ = servidores.filter(s => {
+      const fok = funcFilter === 'PROFESSOR' ? s.funcao.includes('PROFESSOR') || s.funcao.includes('PROF') : s.funcao.includes('MONITOR');
+      return fok && isDisponivelNoIntervalo(s, dtIni, dtFim);
+    });
+    if (!dispServ.length) return '<tr><td colspan="4" class="text-center text-muted py-2">Nenhum servidor disponível no período</td></tr>';
+    return dispServ.map(s => {
+      // Datas com vagas em que o servidor está disponível
+      const datas = Object.keys(vagasMap).filter(d => isDisponivelNaData(s, d) && vagasMap[d] > 0);
+      const datasStr = datas.length ? datas.map(d => `${formatDate(d)} (${vagasMap[d]} vagas)`).join(', ') : '<span class="text-muted">Sem vagas abertas</span>';
+      return `<tr>
+        <td class="fw-semibold">${escHtml(s.nome)}</td>
+        <td>${escHtml(s.funcao)}</td>
+        <td style="font-size:.82rem">${s.dtIni ? escHtml(formatDate(s.dtIni)) : '—'} → ${s.dtFim ? escHtml(formatDate(s.dtFim)) : '—'}</td>
+        <td style="font-size:.82rem">${datasStr}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  document.getElementById('cruz-prof-body').innerHTML = buildCruzBody('PROFESSOR', vagasProfData);
+  document.getElementById('cruz-mon-body').innerHTML = buildCruzBody('MONITOR', vagasMonData);
+}
+
+// ============================================================
+// EXPORTAR CSV
+// ============================================================
+function exportarCSV(tableId, filename) {
+  const tbl = document.getElementById(tableId);
+  if (!tbl) return;
+  const rows = Array.from(tbl.querySelectorAll('tr'));
+  const csv = rows.map(r =>
+    Array.from(r.querySelectorAll('th,td'))
+      .map(c => '"' + c.innerText.replace(/"/g,'""') + '"')
+      .join(';')
+  ).join('\n');
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename + '_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+// ============================================================
+// UTILITÁRIOS
+// ============================================================
+function isEpol(funcao) {
+  const f = (funcao||'').toLowerCase();
+  return f.includes('epol');
+}
+
+function parseDate(v) {
+  if (!v) return null;
+  const s = v.toString().trim();
+  if (!s || s === 'NaT' || s === 'nan') return null;
+  // yyyy-mm-dd or yyyy-mm-ddT...
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+  // dd/mm/yyyy
+  if (/^\d{2}\/\d{2}\/\d{4}/.test(s)) {
+    const [d,m,y] = s.split('/');
+    return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+  }
+  // mm/dd/yyyy
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(s)) {
+    const parts = s.split('/');
+    return `${parts[2]}-${parts[0].padStart(2,'0')}-${parts[1].padStart(2,'0')}`;
+  }
+  // Timestamp numérico do Excel
+  const n = parseFloat(s);
+  if (!isNaN(n)) {
+    const d = new Date(Math.round((n - 25569) * 86400 * 1000));
+    return d.toISOString().slice(0,10);
+  }
+  return null;
+}
+
+function normalizeDate(v) {
+  if (!v) return '';
+  const s = v.toString().trim();
+  // dd/mm/yyyy
+  if (/^\d{2}\/\d{2}\/\d{4}/.test(s)) {
+    const [d,m,y] = s.split('/');
+    return `${y}-${m}-${d}`;
+  }
+  // yyyy-mm-dd
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+  return s;
+}
+
+function formatDate(iso) {
+  if (!iso || iso.length < 10) return iso || '';
+  const [y,m,d] = iso.slice(0,10).split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function isDisponivelNaData(s, dt) {
+  if (s.origem === 'BSB') return true; // BSB sem datas = sempre disponível
+  if (!s.dtIni && !s.dtFim) return true;
+  if (s.dtIni && dt < s.dtIni) return false;
+  if (s.dtFim && dt > s.dtFim) return false;
+  return true;
+}
+
+function isDisponivelNoIntervalo(s, dtI, dtF) {
+  if (s.origem === 'BSB') return true;
+  if (!s.dtIni && !s.dtFim) return true;
+  // Overlap: srv.ini <= dtF AND srv.fim >= dtI
+  const sIni = s.dtIni || '1900-01-01';
+  const sFim = s.dtFim || '2099-12-31';
+  return sIni <= dtF && sFim >= dtI;
+}
+
+function populateSelect(id, values, labelFn, valFn) {
+  const sel = document.getElementById(id);
+  if (!sel) return;
+  const first = sel.options[0];
+  sel.innerHTML = '';
+  sel.appendChild(first);
+  values.forEach(v => {
+    const opt = document.createElement('option');
+    opt.value = valFn ? valFn(v) : v;
+    opt.textContent = labelFn ? labelFn(v) : v;
+    sel.appendChild(opt);
+  });
+}
+
+function markLoaded(zoneId, iconId, labelId, subId, fname) {
+  document.getElementById(zoneId).classList.add('loaded');
+  document.getElementById(iconId).className = 'bi bi-check-circle-fill';
+  document.getElementById(labelId).textContent = fname;
+  document.getElementById(subId).textContent = 'Arquivo carregado com sucesso';
+}
+
+function addStatus(msg, type) {
+  const div = document.getElementById('load-status');
+  div.innerHTML += `<div class="alert alert-${type} py-2 mb-1">${msg}</div>`;
+}
+
+function set(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return s.toString()
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
