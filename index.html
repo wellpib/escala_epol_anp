@@ -89,6 +89,33 @@
     /* botão ativo (tem seleção) */
     .ms-active { border-color: var(--pf-azul) !important; color: var(--pf-azul) !important; font-weight: 600; }
 
+    /* Montar Grade */
+    .slot-row-prof   { background: #e3f2fd; }
+    .slot-row-mon    { background: #f3e5f5; }
+    .slot-row-filled { background: #f1f8e9 !important; }
+    .slot-row-conflict { background: #fff3e0 !important; }
+    .slot-select {
+      font-size: .82rem;
+      min-width: 180px;
+      border-color: #90caf9;
+    }
+    .slot-select.filled  { border-color: #66bb6a !important; background: #f9fbe7; }
+    .slot-select.conflict { border-color: #ffa726 !important; background: #fff8e1; }
+    .save-toast {
+      position: fixed; bottom: 1.5rem; right: 1.5rem;
+      background: #2e7d32; color: #fff;
+      padding: .5rem 1.1rem; border-radius: 8px;
+      font-size: .88rem; box-shadow: 0 3px 10px rgba(0,0,0,.2);
+      opacity: 0; transition: opacity .3s;
+      z-index: 9999; pointer-events: none;
+    }
+    .save-toast.show { opacity: 1; }
+    .grupo-header td {
+      background: var(--pf-azul) !important;
+      color: #fff; font-weight: 700;
+      font-size: .82rem; padding: .35rem .6rem;
+    }
+
     /* Print */
     @media print {
       .no-print { display: none !important; }
@@ -130,6 +157,7 @@
         <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-dashboard')"><i class="bi bi-speedometer2 me-1"></i>Dashboard</a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-servidores')"><i class="bi bi-people-fill me-1"></i>Servidores</a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-grade')"><i class="bi bi-calendar3-week me-1"></i>Grade da Semana</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-montar')"><i class="bi bi-pencil-square me-1"></i>Montar Grade</a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-relatorio')"><i class="bi bi-bar-chart-fill me-1"></i>Relatórios</a></li>
       </ul>
     </div>
@@ -484,6 +512,127 @@
     </div>
   </div>
 
+  <!-- ===================== TAB: MONTAR GRADE ===================== -->
+  <div id="tab-montar" style="display:none">
+    <h5 class="section-title">Montar Grade — Alocação de Servidores ePol</h5>
+
+    <!-- Barra de persistência -->
+    <div class="alert alert-info py-2 mb-3 d-flex align-items-center gap-2 flex-wrap no-print" style="font-size:.88rem">
+      <i class="bi bi-floppy2-fill text-primary"></i>
+      <span>As alocações são <strong>salvas automaticamente</strong> neste navegador (localStorage).</span>
+      <div class="ms-auto d-flex gap-2 flex-wrap">
+        <button class="btn btn-sm btn-outline-primary" onclick="exportarGradeJSON()">
+          <i class="bi bi-download me-1"></i>Exportar JSON
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('import-grade-json').click()">
+          <i class="bi bi-upload me-1"></i>Importar JSON
+        </button>
+        <button class="btn btn-sm btn-outline-success" onclick="exportarGradeCSV()">
+          <i class="bi bi-filetype-csv me-1"></i>Exportar Grade Preenchida
+        </button>
+        <button class="btn btn-sm btn-outline-danger" onclick="limparAlocacoes()">
+          <i class="bi bi-trash me-1"></i>Limpar tudo
+        </button>
+        <input type="file" id="import-grade-json" class="d-none" accept=".json" onchange="importarGradeJSON(this)" />
+      </div>
+    </div>
+
+    <!-- Cards resumo -->
+    <div class="row g-2 mb-3">
+      <div class="col-6 col-md-3">
+        <div class="card text-center p-2 shadow-sm" style="background:var(--pf-azul);color:#fff;border-radius:10px">
+          <div class="small opacity-75">Total Vagas ePol</div>
+          <div style="font-size:1.8rem;font-weight:700" id="mg-cnt-total">0</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card text-center p-2 shadow-sm" style="background:#2e7d32;color:#fff;border-radius:10px">
+          <div class="small opacity-75">Preenchidas</div>
+          <div style="font-size:1.8rem;font-weight:700" id="mg-cnt-filled">0</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card text-center p-2 shadow-sm" style="background:#e65100;color:#fff;border-radius:10px">
+          <div class="small opacity-75">Em Aberto</div>
+          <div style="font-size:1.8rem;font-weight:700" id="mg-cnt-open">0</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card text-center p-2 shadow-sm" style="background:#f57f17;color:#fff;border-radius:10px">
+          <div class="small opacity-75">Conflitos</div>
+          <div style="font-size:1.8rem;font-weight:700" id="mg-cnt-conflict">0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card p-2 mb-3 no-print shadow-sm">
+      <div class="row g-2 align-items-end">
+        <div class="col-6 col-md-2">
+          <label class="form-label small fw-semibold mb-1">Data</label>
+          <select class="form-select form-select-sm" id="mg-filt-data" onchange="renderMontarGrade()">
+            <option value="">Todas</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label small fw-semibold mb-1">Função</label>
+          <select class="form-select form-select-sm" id="mg-filt-funcao" onchange="renderMontarGrade()">
+            <option value="">Ambas</option>
+            <option value="Prof. EPOL">Prof. EPOL</option>
+            <option value="Monitor EPOL">Monitor EPOL</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label small fw-semibold mb-1">Status</label>
+          <select class="form-select form-select-sm" id="mg-filt-status" onchange="renderMontarGrade()">
+            <option value="">Todos</option>
+            <option value="aberto">Em aberto</option>
+            <option value="preenchido">Preenchidos</option>
+            <option value="conflito">Com conflito</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label small fw-semibold mb-1">Turma</label>
+          <input type="text" class="form-control form-control-sm" id="mg-filt-turma"
+                 placeholder="Ex: K (11)" oninput="renderMontarGrade()" />
+        </div>
+        <div class="col-12 col-md-4 d-flex align-items-end gap-2">
+          <div class="form-check mb-0">
+            <input class="form-check-input" type="checkbox" id="mg-mostrar-todos" onchange="renderMontarGrade()" />
+            <label class="form-check-label small" for="mg-mostrar-todos">Mostrar todas as funções</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabela principal -->
+    <div class="card shadow-sm">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm mb-0" id="tbl-montar">
+            <thead style="background:var(--pf-azul);color:#fff;position:sticky;top:0;z-index:1">
+              <tr>
+                <th style="width:90px">Data</th>
+                <th style="width:100px">Horário</th>
+                <th style="width:55px">Módulo</th>
+                <th style="width:70px">Cód.Aula</th>
+                <th style="width:80px">Turma</th>
+                <th style="width:110px">Função</th>
+                <th>Servidor Alocado</th>
+                <th style="width:90px">Status</th>
+              </tr>
+            </thead>
+            <tbody id="tbl-montar-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card-footer text-muted small" id="mg-footer"></div>
+    </div>
+  </div>
+
+  <!-- Toast salvo -->
+  <div class="save-toast" id="save-toast"><i class="bi bi-check-circle-fill me-1"></i>Salvo</div>
+
   <!-- ===================== TAB: RELATÓRIOS ===================== -->
   <div id="tab-relatorio" style="display:none">
     <h5 class="section-title">Relatórios</h5>
@@ -638,9 +787,10 @@ let semanaLabel = '';
 // NAVEGAÇÃO
 // ============================================================
 function showTab(id) {
-  ['tab-upload','tab-dashboard','tab-servidores','tab-grade','tab-relatorio']
+  ['tab-upload','tab-dashboard','tab-servidores','tab-grade','tab-montar','tab-relatorio']
     .forEach(t => document.getElementById(t).style.display = 'none');
   document.getElementById(id).style.display = '';
+  if (id === 'tab-montar') renderMontarGrade();
 }
 
 function showRel(id) {
@@ -798,6 +948,15 @@ function parseSemana(file) {
           turma: iTurma >= 0 ? (r[iTurma]||'').toString().trim() : '',
         });
       }
+
+      // Gerar slotKey estável para cada linha da grade
+      const _keyCount = {};
+      grade.forEach(g => {
+        const base = `${g.data}|${g.horario}|${g.codAula}|${g.funcao}|${g.turma}`;
+        _keyCount[base] = (_keyCount[base] || 0);
+        g.slotKey = base + '|' + _keyCount[base];
+        _keyCount[base]++;
+      });
 
       markLoaded('zone-sem', 'icon-sem', 'label-sem', 'sub-sem', file.name);
       addStatus('✅ Grade carregada: ' + grade.length + ' registros — ' + semanaLabel, 'success');
@@ -1328,6 +1487,270 @@ function escHtml(s) {
     .replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;');
 }
+
+// ============================================================
+// MONTAR GRADE — PERSISTÊNCIA
+// ============================================================
+const STORAGE_KEY = 'epol-grade-assignments';
+
+// alocacoes: { slotKey -> nomeServidor }
+let alocacoes = {};
+
+function carregarAlocacoes() {
+  try {
+    alocacoes = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+  } catch { alocacoes = {}; }
+}
+
+function salvarAlocacoes() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(alocacoes));
+  // Toast
+  const t = document.getElementById('save-toast');
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+function onServidorSelect(slotKey, valor) {
+  if (valor) alocacoes[slotKey] = valor;
+  else delete alocacoes[slotKey];
+  salvarAlocacoes();
+  // Atualizar badges de conflito sem re-renderizar tudo
+  atualizarConflitos();
+  atualizarCardsMG();
+}
+
+function limparAlocacoes() {
+  if (!confirm('Limpar todas as alocações salvas?')) return;
+  alocacoes = {};
+  salvarAlocacoes();
+  renderMontarGrade();
+}
+
+// ============================================================
+// MONTAR GRADE — EXPORT / IMPORT JSON
+// ============================================================
+function exportarGradeJSON() {
+  const blob = new Blob([JSON.stringify(alocacoes, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'alocacoes_epol_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+}
+
+function importarGradeJSON(input) {
+  const f = input.files[0]; if (!f) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      alocacoes = {...alocacoes, ...data};
+      salvarAlocacoes();
+      renderMontarGrade();
+    } catch { alert('Arquivo JSON inválido.'); }
+    input.value = '';
+  };
+  reader.readAsText(f);
+}
+
+function exportarGradeCSV() {
+  const epolRows = grade.filter(g => isEpol(g.funcao));
+  if (!epolRows.length) { alert('Nenhuma vaga ePol na grade.'); return; }
+  const header = ['DATA','HORARIO','MODULO','COD_AULA','FUNCAO','SERVIDOR','TURMA'];
+  const rows = epolRows.map(g => {
+    const srv = alocacoes[g.slotKey] || g.servidor || '';
+    return [g.data, g.horario, g.modulo, g.codAula, g.funcao, srv, g.turma]
+      .map(v => '"' + (v||'').replace(/"/g,'""') + '"').join(';');
+  });
+  const csv = '\ufeff' + header.join(';') + '\n' + rows.join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'grade_preenchida_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+// ============================================================
+// MONTAR GRADE — RENDER
+// ============================================================
+
+// Detectar conflito: mesmo servidor alocado em dois slots com mesmo data+horário
+function getConflitos() {
+  // mapa: "data|horario|nomeServidor" -> [slotKey, ...]
+  const mapa = {};
+  grade.filter(g => isEpol(g.funcao)).forEach(g => {
+    const srv = alocacoes[g.slotKey];
+    if (!srv) return;
+    const k = `${g.data}|${g.horario}|${srv}`;
+    if (!mapa[k]) mapa[k] = [];
+    mapa[k].push(g.slotKey);
+  });
+  const conflitosSet = new Set();
+  Object.values(mapa).forEach(keys => {
+    if (keys.length > 1) keys.forEach(k => conflitosSet.add(k));
+  });
+  return conflitosSet;
+}
+
+function atualizarConflitos() {
+  const conf = getConflitos();
+  document.querySelectorAll('[data-slot-key]').forEach(row => {
+    const key = row.dataset.slotKey;
+    const sel = row.querySelector('.slot-select');
+    const badge = row.querySelector('.slot-status');
+    const srv = alocacoes[key];
+    row.classList.remove('slot-row-filled','slot-row-conflict');
+    if (sel) sel.classList.remove('filled','conflict');
+    if (srv) {
+      if (conf.has(key)) {
+        row.classList.add('slot-row-conflict');
+        if (sel) sel.classList.add('conflict');
+        if (badge) badge.innerHTML = '<span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>Conflito</span>';
+      } else {
+        row.classList.add('slot-row-filled');
+        if (sel) sel.classList.add('filled');
+        if (badge) badge.innerHTML = '<span class="badge bg-success"><i class="bi bi-check-lg me-1"></i>OK</span>';
+      }
+    } else {
+      if (badge) badge.innerHTML = '<span class="badge bg-secondary">Em aberto</span>';
+    }
+  });
+}
+
+function atualizarCardsMG() {
+  const epolRows = grade.filter(g => isEpol(g.funcao));
+  const conf = getConflitos();
+  const filled = epolRows.filter(g => alocacoes[g.slotKey]).length;
+  const conflicts = epolRows.filter(g => conf.has(g.slotKey)).length;
+  set('mg-cnt-total', epolRows.length);
+  set('mg-cnt-filled', filled);
+  set('mg-cnt-open', epolRows.length - filled);
+  set('mg-cnt-conflict', conflicts);
+}
+
+function renderMontarGrade() {
+  carregarAlocacoes();
+  if (!grade.length || !servidores.length) {
+    document.getElementById('tbl-montar-body').innerHTML =
+      '<tr><td colspan="8" class="text-center text-muted py-4">Carregue os arquivos na aba <strong>Carregar Arquivos</strong> para começar.</td></tr>';
+    return;
+  }
+
+  // Preencher filtro de datas (apenas 1ª vez ou se vazio)
+  const mgDtSel = document.getElementById('mg-filt-data');
+  if (mgDtSel.options.length <= 1) {
+    const datas = [...new Set(grade.filter(g => isEpol(g.funcao)).map(g => g.data))].sort();
+    datas.forEach(d => {
+      const o = document.createElement('option');
+      o.value = d; o.textContent = formatDate(d);
+      mgDtSel.appendChild(o);
+    });
+  }
+
+  const dtFilt    = document.getElementById('mg-filt-data').value;
+  const funFilt   = document.getElementById('mg-filt-funcao').value;
+  const statusFlt = document.getElementById('mg-filt-status').value;
+  const turmFlt   = document.getElementById('mg-filt-turma').value.toLowerCase();
+  const mostrarTodos = document.getElementById('mg-mostrar-todos').checked;
+
+  const conf = getConflitos();
+
+  // Linhas a mostrar
+  const rows = grade.filter(g => {
+    if (!mostrarTodos && !isEpol(g.funcao)) return false;
+    if (dtFilt  && g.data !== dtFilt)          return false;
+    if (funFilt && g.funcao !== funFilt)        return false;
+    if (turmFlt && !g.turma.toLowerCase().includes(turmFlt)) return false;
+    if (statusFlt) {
+      const srv = alocacoes[g.slotKey];
+      if (statusFlt === 'aberto'     && srv)            return false;
+      if (statusFlt === 'preenchido' && (!srv || conf.has(g.slotKey))) return false;
+      if (statusFlt === 'conflito'   && !conf.has(g.slotKey))          return false;
+    }
+    return true;
+  });
+
+  let html = '';
+  let lastGrupo = '';
+
+  rows.forEach(g => {
+    const epolRow = isEpol(g.funcao);
+    const srv     = alocacoes[g.slotKey] || '';
+    const isConf  = conf.has(g.slotKey);
+
+    // Cabeçalho de grupo por data + horário (apenas linhas ePol)
+    if (epolRow) {
+      const grupo = g.data + '|' + g.horario;
+      if (grupo !== lastGrupo) {
+        lastGrupo = grupo;
+        html += `<tr class="grupo-header"><td colspan="8">
+          <i class="bi bi-calendar-event me-1"></i>${formatDate(g.data)} &nbsp;
+          <i class="bi bi-clock me-2"></i>${escHtml(g.horario)} &nbsp;·&nbsp; ${escHtml(g.modulo)}
+        </td></tr>`;
+      }
+    }
+
+    // Servidores compatíveis com este slot
+    const tipoFun = g.funcao === 'Prof. EPOL' ? 'PROFESSOR' : 'MONITOR';
+    const dispServs = servidores.filter(s =>
+      s.funcao.includes(tipoFun) && isDisponivelNaData(s, g.data)
+    ).sort((a,b) => a.nome.localeCompare(b.nome));
+
+    let rowCls = epolRow ? (isConf ? 'slot-row-conflict' : srv ? 'slot-row-filled' : (g.funcao === 'Prof. EPOL' ? 'slot-row-prof' : 'slot-row-mon')) : '';
+    let statusBadge = '';
+    if (!epolRow) {
+      statusBadge = '';
+    } else if (isConf) {
+      statusBadge = '<span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>Conflito</span>';
+    } else if (srv) {
+      statusBadge = '<span class="badge bg-success"><i class="bi bi-check-lg me-1"></i>OK</span>';
+    } else {
+      statusBadge = '<span class="badge bg-secondary">Em aberto</span>';
+    }
+
+    let funcBadge = epolRow
+      ? `<span class="badge ${g.funcao === 'Prof. EPOL' ? 'badge-professor' : 'badge-monitor'}">${escHtml(g.funcao)}</span>`
+      : escHtml(g.funcao);
+
+    let serverCell = '';
+    if (epolRow) {
+      const selCls = 'slot-select form-select form-select-sm' + (isConf ? ' conflict' : srv ? ' filled' : '');
+      const key = escHtml(g.slotKey);
+      serverCell = `<select class="${selCls}" data-key="${key}"
+                      onchange="onServidorSelect('${key}', this.value)">
+          <option value="">— Selecionar servidor —</option>
+          ${dispServs.map(s =>
+            `<option value="${escHtml(s.nome)}" ${srv === s.nome ? 'selected' : ''}>${escHtml(s.nome)} (${escHtml(s.cargo)})</option>`
+          ).join('')}
+        </select>`;
+      if (!dispServs.length) {
+        serverCell = '<span class="text-danger small"><i class="bi bi-exclamation-circle me-1"></i>Sem servidores disponíveis</span>';
+      }
+    } else {
+      serverCell = escHtml(g.servidor) || '<span class="text-muted">—</span>';
+    }
+
+    html += `<tr class="${rowCls}" data-slot-key="${epolRow ? escHtml(g.slotKey) : ''}">
+      <td style="font-size:.82rem">${formatDate(g.data)}</td>
+      <td style="font-size:.82rem">${escHtml(g.horario)}</td>
+      <td style="font-size:.82rem">${escHtml(g.modulo)}</td>
+      <td style="font-size:.82rem">${escHtml(g.codAula)}</td>
+      <td style="font-size:.82rem">${escHtml(g.turma)}</td>
+      <td>${funcBadge}</td>
+      <td>${serverCell}</td>
+      <td class="slot-status">${statusBadge}</td>
+    </tr>`;
+  });
+
+  document.getElementById('tbl-montar-body').innerHTML = html ||
+    '<tr><td colspan="8" class="text-center text-muted py-3">Nenhuma vaga encontrada com os filtros selecionados.</td></tr>';
+  document.getElementById('mg-footer').textContent = rows.filter(g => isEpol(g.funcao)).length + ' vaga(s) ePol exibida(s)';
+
+  atualizarCardsMG();
+}
+
+// Inicializar ao carregar a página
+carregarAlocacoes();
 </script>
 </body>
 </html>
