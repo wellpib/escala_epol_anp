@@ -280,11 +280,12 @@
           </select>
         </div>
         <div class="col-12 col-sm-6 col-md-3">
-          <label class="form-label small fw-semibold mb-1">Origem</label>
-          <select class="form-select form-select-sm" id="filt-origem" onchange="renderServidores()">
-            <option value="">Todas</option>
-            <option value="FORA">Fora de Brasília</option>
-            <option value="BSB">De Brasília</option>
+          <label class="form-label small fw-semibold mb-1">Cargo</label>
+          <select class="form-select form-select-sm" id="filt-cargo" onchange="renderServidores()">
+            <option value="">Todos</option>
+            <option value="EPF">EPF</option>
+            <option value="APF">APF</option>
+            <option value="PCF">PCF</option>
           </select>
         </div>
         <div class="col-12 col-sm-6 col-md-3">
@@ -306,10 +307,9 @@
               <tr>
                 <th>Nome</th>
                 <th>Cargo</th>
-                <th>Lotação</th>
                 <th>Função</th>
                 <th>Período de Disponibilidade</th>
-                <th>Origem</th>
+                <th>Lotação</th>
                 <th>Contato</th>
               </tr>
             </thead>
@@ -460,7 +460,8 @@
               <thead style="background:var(--pf-azul);color:#fff">
                 <tr>
                   <th>Nome</th><th>Cargo</th><th>Lotação</th><th>Função</th>
-                  <th>Data Início</th><th>Data Fim</th><th>Origem</th><th>Telefone</th><th>E-mail</th>
+                  <th>Data Início</th><th>Data Fim</th><th>Telefone</th><th>E-mail</th>
+
                 </tr>
               </thead>
               <tbody id="tbl-rel-disp-body"></tbody>
@@ -609,87 +610,70 @@ function parseAloc(file) {
       const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
       servidores = [];
 
-      function parseSheet(ws, origem) {
+      // Normaliza string: maiúsculo, sem acento, sem espaços extras
+      const norm = s => (s||'').toString().toUpperCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+
+      // Lê TODAS as abas (funciona com uma ou várias)
+      wb.SheetNames.forEach(sheetName => {
+        const ws = wb.Sheets[sheetName];
         if (!ws) return;
         const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, dateNF: 'yyyy-mm-dd' });
-        // Encontrar linha de cabeçalho real (contém "NOME" e "CARGO")
+        if (rows.length < 2) return;
+
+        // Encontrar a linha do cabeçalho: primeira linha que contém NOME e CARGO
         let hIdx = -1;
-        for (let i = 0; i < Math.min(6, rows.length); i++) {
-          const cells = rows[i].map(c => (c||'').toString().toUpperCase().trim());
+        for (let i = 0; i < Math.min(8, rows.length); i++) {
+          const cells = rows[i].map(c => norm(c));
           if (cells.includes('NOME') && cells.includes('CARGO')) { hIdx = i; break; }
         }
-        if (hIdx < 0) return;
+        if (hIdx < 0) return; // aba sem cabeçalho reconhecível — ignorar
 
-        // Normalizar cabeçalho para busca por nome
-        const norm = s => (s||'').toString().toUpperCase()
-          .normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+        // Mapear colunas pelo nome do cabeçalho
         const header = rows[hIdx].map(norm);
         const ci = (...terms) => header.findIndex(h => terms.some(t => h === norm(t) || h.includes(norm(t))));
 
         const iNome  = ci('NOME');
         const iCargo = ci('CARGO');
-        const iLot   = ci('LOTAÇÃO', 'LOTACAO');
-        const iFun   = ci('FUNÇÃO', 'FUNCAO');         // ausente na aba DE BRASÍLIA
+        const iLot   = ci('LOTACAO', 'LOTAÇÃO');
+        const iFun   = ci('FUNCAO', 'FUNÇÃO');
         const iEmail = ci('E-MAIL', 'EMAIL', 'MAIL');
         const iTel   = ci('TELEFONE', 'TEL');
-        // Datas: busca pelo novo nome de coluna (DATA INICIO / DATA FINAL)
         const iDtIni = ci('DATA INICIO', 'DATA INÍCIO', 'INICIO');
         const iDtFim = ci('DATA FINAL', 'DATA FIM', 'FINAL');
-        // Disponibilidade (aba DE BRASÍLIA)
-        const iDisp  = ci('DISPONIBILIDADE');
+
+        if (iNome < 0) return; // sem coluna NOME — aba inválida
 
         for (let i = hIdx + 1; i < rows.length; i++) {
           const r = rows[i];
-          const nome = iNome >= 0 ? (r[iNome]||'').toString().trim() : '';
-          if (!nome || nome === 'nan' || nome === 'NaN') continue;
-          // Pular linhas de seção (ex: "VIAGEM COM PASSAGEM AEREA")
-          const col0 = norm(r[0]||'');
-          if (col0.includes('VIAGEM') || col0.includes('BRASILIA')) continue;
+          const nome = (r[iNome]||'').toString().trim();
+          if (!nome || nome.toLowerCase() === 'nan') continue;
 
-          // Aba DE BRASÍLIA: pular se DISPONIBILIDADE contiver "NÃO"
-          if (iDisp >= 0) {
-            const disp = norm(r[iDisp]||'');
-            if (disp.includes('NAO') || disp === 'N') continue;
+          // Pular linhas que são subtítulos de seção (qualquer texto longo na col 0 ou 1)
+          const col0 = norm(r[0]||'');
+          if (col0.length > 4 && iNome > 0 && !r[iNome-1]) {
+            // col0 preenchida mas campo NOME anterior vazio → linha de seção
+            if (!col0.match(/^\d/)) continue;
           }
 
-          // Datas: se ambas vazias → disponibilidade total (null = sem restrição)
+          // DATA INICIO e DATA FINAL: vazias = disponibilidade total
           const dtIni = iDtIni >= 0 ? parseDate(r[iDtIni]) : null;
           const dtFim = iDtFim >= 0 ? parseDate(r[iDtFim]) : null;
 
           servidores.push({
             nome,
-            cargo:       iCargo >= 0 ? (r[iCargo]||'').toString().trim() : '',
-            lotacao:     iLot   >= 0 ? (r[iLot]  ||'').toString().trim() : '',
-            funcao:      iFun   >= 0 ? (r[iFun]  ||'').toString().trim().toUpperCase() : '',
-            dtIni,   // null = sem restrição de início
-            dtFim,   // null = sem restrição de fim
-            origem,
+            cargo:   iCargo >= 0 ? (r[iCargo]||'').toString().trim() : '',
+            lotacao: iLot   >= 0 ? (r[iLot]  ||'').toString().trim() : '',
+            funcao:  iFun   >= 0 ? (r[iFun]  ||'').toString().trim().toUpperCase() : '',
+            dtIni,  // null = sem restrição de data
+            dtFim,  // null = sem restrição de data
             tel:   iTel   >= 0 ? (r[iTel]  ||'').toString().trim() : '',
             email: iEmail >= 0 ? (r[iEmail]||'').toString().trim() : '',
           });
         }
-      }
-
-      parseSheet(wb.Sheets['FORA DE BRASÍLIA'] || wb.Sheets[wb.SheetNames[0]], 'FORA');
-      parseSheet(wb.Sheets['DE BRASÍLIA']      || wb.Sheets[wb.SheetNames[1]], 'BSB');
-
-      // Propagar FUNÇÃO da aba FORA para servidores BSB que não têm função definida
-      // (aba DE BRASÍLIA não possui coluna FUNÇÃO — buscamos pelo nome)
-      const normNome = n => n.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
-      const funcaoPorNome = {};
-      servidores.filter(s => s.origem === 'FORA' && s.funcao)
-                .forEach(s => { funcaoPorNome[normNome(s.nome)] = s.funcao; });
-      servidores.forEach(s => {
-        if (!s.funcao) s.funcao = funcaoPorNome[normNome(s.nome)] || '';
       });
 
-      // Deduplicar por nome + função + dtIni + dtFim
-      const seen = new Set();
-      servidores = servidores.filter(s => {
-        const key = s.nome + '|' + s.funcao + '|' + (s.dtIni||'') + '|' + (s.dtFim||'');
-        if (seen.has(key)) return false;
-        seen.add(key); return true;
-      });
+      if (!servidores.length) throw new Error('Nenhum servidor encontrado. Verifique se o arquivo possui as colunas NOME, CARGO e FUNÇÃO.');
 
       markLoaded('zone-aloc', 'icon-aloc', 'label-aloc', 'sub-aloc', file.name);
       addStatus('✅ Alocações carregadas: ' + servidores.length + ' servidores encontrados.', 'success');
@@ -833,7 +817,9 @@ function renderDashboard() {
     servHtml = '<div class="row g-2">';
     dispSemana.forEach(s => {
       const badge = s.funcao.includes('PROFESSOR') ? 'badge-professor' : 'badge-monitor';
-      const origBadge = s.origem === 'BSB' ? 'bg-secondary' : 'bg-info text-dark';
+      const periodo = s.dtIni || s.dtFim
+        ? `${s.dtIni ? formatDate(s.dtIni) : '?'} → ${s.dtFim ? formatDate(s.dtFim) : '?'}`
+        : 'Disponibilidade total';
       servHtml += `<div class="col-12 col-md-6 col-xl-4">
         <div class="card p-2 h-100" style="border-left:3px solid ${s.funcao.includes('PROFESSOR')?'#1565c0':'#6a1b9a'}">
           <div class="d-flex justify-content-between align-items-start">
@@ -841,7 +827,7 @@ function renderDashboard() {
             <span class="badge ${badge} ms-2">${escHtml(s.funcao)}</span>
           </div>
           <div class="text-muted" style="font-size:.78rem">${escHtml(s.cargo)} | ${escHtml(s.lotacao)}</div>
-          <div style="font-size:.78rem">${s.dtIni||'—'} → ${s.dtFim||'—'} <span class="badge ${origBadge} ms-1">${s.origem==='BSB'?'Brasília':'Fora BSB'}</span></div>
+          <div style="font-size:.78rem"><i class="bi bi-calendar2-range me-1"></i>${escHtml(periodo)}</div>
         </div>
       </div>`;
     });
@@ -854,15 +840,15 @@ function renderDashboard() {
 // SERVIDORES
 // ============================================================
 function renderServidores() {
-  const funcFilt = document.getElementById('filt-funcao').value.toUpperCase();
-  const origFilt = document.getElementById('filt-origem').value;
-  const dataFilt = document.getElementById('filt-data').value; // yyyy-mm-dd
-  const nomeFilt = document.getElementById('filt-nome').value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const funcFilt  = document.getElementById('filt-funcao').value.toUpperCase();
+  const cargoFilt = document.getElementById('filt-cargo').value.toUpperCase();
+  const dataFilt  = document.getElementById('filt-data').value;
+  const nomeFilt  = document.getElementById('filt-nome').value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 
   const filtered = servidores.filter(s => {
-    if (funcFilt && !s.funcao.includes(funcFilt)) return false;
-    if (origFilt && s.origem !== origFilt) return false;
-    if (dataFilt && !isDisponivelNaData(s, dataFilt)) return false;
+    if (funcFilt  && !s.funcao.includes(funcFilt)) return false;
+    if (cargoFilt && s.cargo.toUpperCase() !== cargoFilt) return false;
+    if (dataFilt  && !isDisponivelNaData(s, dataFilt)) return false;
     if (nomeFilt) {
       const nome = s.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
       if (!nome.includes(nomeFilt)) return false;
@@ -873,18 +859,19 @@ function renderServidores() {
   let html = '';
   filtered.forEach(s => {
     const badge = s.funcao.includes('PROFESSOR') ? 'badge-professor' : (s.funcao.includes('MONITOR') ? 'badge-monitor' : 'bg-secondary');
-    const origBadge = s.origem === 'BSB' ? 'bg-secondary' : 'bg-info text-dark';
+    const periodo = s.dtIni || s.dtFim
+      ? `${s.dtIni ? formatDate(s.dtIni) : '?'} → ${s.dtFim ? formatDate(s.dtFim) : '?'}`
+      : '<span class="text-success">Disponibilidade total</span>';
     html += `<tr>
       <td class="fw-semibold">${escHtml(s.nome)}</td>
       <td>${escHtml(s.cargo)}</td>
+      <td><span class="badge ${badge}">${escHtml(s.funcao) || 'Não definida'}</span></td>
+      <td>${periodo}</td>
       <td>${escHtml(s.lotacao)}</td>
-      <td><span class="badge ${badge}">${escHtml(s.funcao) || '<i>Não definida</i>'}</span></td>
-      <td>${s.dtIni ? escHtml(formatDate(s.dtIni)) : '—'} ${s.dtFim ? ' → ' + escHtml(formatDate(s.dtFim)) : '<span class="text-muted small">sem restrição</span>'}</td>
-      <td><span class="badge ${origBadge}">${s.origem==='BSB'?'Brasília':'Fora BSB'}</span></td>
       <td style="font-size:.8rem">${s.tel ? '<i class="bi bi-telephone me-1"></i>'+escHtml(s.tel)+' ' : ''}${s.email ? '<i class="bi bi-envelope me-1"></i>'+escHtml(s.email) : ''}</td>
     </tr>`;
   });
-  document.getElementById('tbl-serv-body').innerHTML = html || '<tr><td colspan="7" class="text-center text-muted py-3">Nenhum servidor encontrado</td></tr>';
+  document.getElementById('tbl-serv-body').innerHTML = html || '<tr><td colspan="6" class="text-center text-muted py-3">Nenhum servidor encontrado</td></tr>';
   document.getElementById('serv-count-footer').textContent = filtered.length + ' servidor(es) exibido(s) de ' + servidores.length + ' total';
 }
 
@@ -986,15 +973,14 @@ function renderRelDisp() {
       <td class="fw-semibold">${escHtml(s.nome)}</td>
       <td>${escHtml(s.cargo)}</td>
       <td>${escHtml(s.lotacao)}</td>
-      <td><span class="badge ${badge}">${escHtml(s.funcao) || '<i>Não definida</i>'}</span></td>
+      <td><span class="badge ${badge}">${escHtml(s.funcao) || 'Não definida'}</span></td>
       <td>${s.dtIni ? escHtml(formatDate(s.dtIni)) : '—'}</td>
-      <td>${s.dtFim ? escHtml(formatDate(s.dtFim)) : 'sem restrição'}</td>
-      <td>${s.origem === 'BSB' ? 'Brasília' : 'Fora BSB'}</td>
+      <td>${s.dtFim ? escHtml(formatDate(s.dtFim)) : 'Total'}</td>
       <td>${escHtml(s.tel)}</td>
       <td>${escHtml(s.email)}</td>
     </tr>`;
   });
-  document.getElementById('tbl-rel-disp-body').innerHTML = html || '<tr><td colspan="9" class="text-center text-muted py-3">Nenhum servidor no período</td></tr>';
+  document.getElementById('tbl-rel-disp-body').innerHTML = html || '<tr><td colspan="8" class="text-center text-muted py-3">Nenhum servidor no período</td></tr>';
   document.getElementById('rel-disp-footer').textContent = filtered.length + ' servidor(es)';
 }
 
