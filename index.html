@@ -104,6 +104,33 @@
     .slot-row-filled { background: #f1f8e9 !important; }
     .slot-row-conflict { background: #fff3e0 !important; }
     .slot-row-ignorado { background: #e0f7fa !important; opacity: 0.7; }
+    
+    /* Lote Funções */
+    .lote-funcao-check {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.35rem 0.7rem;
+      background: #fff;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.85rem;
+    }
+    .lote-funcao-check:hover {
+      background: #e9ecef;
+      border-color: var(--pf-azul-claro);
+    }
+    .lote-funcao-check input[type="checkbox"] {
+      margin-right: 0.4rem;
+      cursor: pointer;
+    }
+    .lote-funcao-check.checked {
+      background: var(--pf-azul);
+      color: #fff;
+      border-color: var(--pf-azul);
+      font-weight: 600;
+    }
     .slot-select {
       font-size: .82rem;
       min-width: 180px;
@@ -146,6 +173,24 @@
       color: var(--pf-azul);
     }
 
+    /* Login */
+    #login-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: linear-gradient(135deg, var(--pf-azul) 0%, var(--pf-azul-claro) 100%);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .login-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 2.5rem 2rem;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 12px 40px rgba(0,0,0,.35);
+    }
+    .login-perfil-btn { transition: all .15s; font-size: .92rem; }
+    .login-perfil-btn.perfil-ativo { font-weight: 700; }
+    #user-info .badge { font-size: .82rem; padding: .35em .7em; }
+
     #welcome-screen { min-height: 60vh; }
     .step-circle {
       width: 40px; height: 40px; border-radius: 50%;
@@ -157,8 +202,53 @@
 </head>
 <body>
 
+<!-- ==================== LOGIN OVERLAY ==================== -->
+<div id="login-overlay">
+  <div class="login-card">
+    <div class="text-center mb-4">
+      <i class="bi bi-shield-fill" style="font-size:3rem;color:var(--pf-azul)"></i>
+      <h4 class="fw-bold mt-2 mb-0" style="color:var(--pf-azul)">Portal ePol</h4>
+      <div class="text-muted small">Gestão de Alocações — faça login para continuar</div>
+    </div>
+
+    <input type="hidden" id="login-perfil-selecionado" value="" />
+
+    <div class="mb-3">
+      <label class="form-label small fw-semibold mb-2">Perfil de acesso</label>
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-primary flex-fill login-perfil-btn" id="btn-perfil-admin"
+                onclick="selecionarPerfil('admin')">
+          <i class="bi bi-shield-lock me-1"></i>Administrador
+        </button>
+        <button type="button" class="btn btn-outline-secondary flex-fill login-perfil-btn" id="btn-perfil-viewer"
+                onclick="selecionarPerfil('viewer')">
+          <i class="bi bi-eye me-1"></i>Visualizador
+        </button>
+      </div>
+      <div class="text-muted mt-1" style="font-size:.75rem">
+        <span style="color:var(--pf-azul)"><i class="bi bi-shield-lock me-1"></i>Administrador</span> — acesso completo &nbsp;|&nbsp;
+        <span><i class="bi bi-eye me-1"></i>Visualizador</span> — somente Relatórios
+      </div>
+    </div>
+
+    <div class="mb-2">
+      <label class="form-label small fw-semibold">Senha</label>
+      <input type="password" class="form-control" id="login-senha"
+             placeholder="Digite a senha..."
+             onkeydown="if(event.key==='Enter') fazerLogin()" />
+    </div>
+
+    <div class="text-danger small mb-3" id="login-erro" style="min-height:1.2rem"></div>
+
+    <button class="btn w-100 fw-semibold py-2" style="background:var(--pf-azul);color:#fff;font-size:1rem"
+            onclick="fazerLogin()">
+      <i class="bi bi-box-arrow-in-right me-1"></i>Entrar
+    </button>
+  </div>
+</div>
+
 <!-- NAVBAR -->
-<nav class="navbar navbar-expand-lg no-print">
+<nav class="navbar navbar-expand-lg no-print" id="main-navbar" style="display:none">
   <div class="container-fluid">
     <span class="navbar-brand">
       <i class="bi bi-shield-fill me-2" style="color:var(--pf-dourado)"></i>
@@ -170,18 +260,23 @@
     <div class="collapse navbar-collapse" id="navMenu">
       <ul class="navbar-nav ms-auto" id="nav-tabs-list">
         <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-upload')"><i class="bi bi-upload me-1"></i>Carregar Arquivos</a></li>
-        <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-dashboard')"><i class="bi bi-speedometer2 me-1"></i>Dashboard</a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-servidores')"><i class="bi bi-people-fill me-1"></i>Servidores</a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-grade')"><i class="bi bi-calendar3-week me-1"></i>Grade da Semana</a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-montar')"><i class="bi bi-pencil-square me-1"></i>Montar Grade</a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-impedimentos')"><i class="bi bi-slash-circle me-1"></i>Impedimentos</a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-relatorio')"><i class="bi bi-bar-chart-fill me-1"></i>Relatórios</a></li>
       </ul>
+      <div class="d-flex align-items-center gap-2 ms-3 mt-2 mt-lg-0 no-print" id="user-info">
+        <span class="badge" id="user-role-badge"></span>
+        <button class="btn btn-sm btn-outline-light" onclick="logout()">
+          <i class="bi bi-box-arrow-right me-1"></i>Sair
+        </button>
+      </div>
     </div>
   </div>
 </nav>
 
-<div class="container-fluid py-3 px-3 px-md-4">
+<div class="container-fluid py-3 px-3 px-md-4" id="main-content" style="display:none">
 
   <!-- ===================== TAB: UPLOAD ===================== -->
   <div id="tab-upload">
@@ -236,103 +331,9 @@
         <div id="load-status" class="mt-3"></div>
 
         <div class="text-center mt-4" id="btn-go-wrap" style="display:none!important">
-          <button class="btn btn-lg px-5" style="background:var(--pf-azul);color:#fff" onclick="showTab('tab-dashboard')">
+          <button class="btn btn-lg px-5" style="background:var(--pf-azul);color:#fff" onclick="showTab('tab-relatorio')">
             <i class="bi bi-arrow-right-circle me-2"></i>Ver Relatórios
           </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===================== TAB: DASHBOARD ===================== -->
-  <div id="tab-dashboard" style="display:none">
-    <h5 class="section-title">Dashboard — Resumo</h5>
-    <div class="row g-3 mb-4" id="cards-resumo">
-      <div class="col-6 col-md-4 col-xl-2">
-        <div class="card stat-card card-azul p-3">
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <div class="small opacity-75">Servidores Disponíveis</div>
-              <div class="stat-num" id="cnt-total-serv">—</div>
-            </div>
-            <i class="bi bi-people-fill card-icon"></i>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-4 col-xl-2">
-        <div class="card stat-card card-verde p-3">
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <div class="small opacity-75">Professores ePol</div>
-              <div class="stat-num" id="cnt-prof">—</div>
-            </div>
-            <i class="bi bi-person-video3 card-icon"></i>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-4 col-xl-2">
-        <div class="card stat-card card-roxo p-3">
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <div class="small opacity-75">Monitores ePol</div>
-              <div class="stat-num" id="cnt-mon">—</div>
-            </div>
-            <i class="bi bi-person-check-fill card-icon"></i>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-4 col-xl-2">
-        <div class="card stat-card card-laranja p-3">
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <div class="small opacity-75">Vagas Prof. EPOL</div>
-              <div class="stat-num" id="cnt-vagas-prof">—</div>
-            </div>
-            <i class="bi bi-journal-text card-icon"></i>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-4 col-xl-2">
-        <div class="card stat-card card-amarelo p-3">
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <div class="small opacity-75">Vagas Monitor EPOL</div>
-              <div class="stat-num" id="cnt-vagas-mon">—</div>
-            </div>
-            <i class="bi bi-journal-check card-icon"></i>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-4 col-xl-2">
-        <div class="card stat-card p-3" style="background:#37474f;color:#fff">
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <div class="small opacity-75">Aulas na Semana</div>
-              <div class="stat-num" id="cnt-aulas">—</div>
-            </div>
-            <i class="bi bi-calendar3 card-icon"></i>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="row g-3">
-      <div class="col-12 col-lg-6">
-        <div class="card p-3 shadow-sm">
-          <h6 class="section-title">Vagas ePol por Data</h6>
-          <div id="chart-vagas-data" class="mt-2"></div>
-        </div>
-      </div>
-      <div class="col-12 col-lg-6">
-        <div class="card p-3 shadow-sm">
-          <h6 class="section-title">Distribuição de Funções na Grade</h6>
-          <div id="chart-funcoes" class="mt-2"></div>
-        </div>
-      </div>
-      <div class="col-12">
-        <div class="card p-3 shadow-sm">
-          <h6 class="section-title">Servidores Disponíveis para a Semana</h6>
-          <div id="dash-serv-semana" class="mt-2"></div>
         </div>
       </div>
     </div>
@@ -777,6 +778,49 @@
       </div>
     </div>
 
+    <!-- Ações em Lote por Função -->
+    <div class="card p-3 mb-3 no-print shadow-sm" style="background:#f8f9fa">
+      <div class="d-flex align-items-center mb-2">
+        <i class="bi bi-lightning-fill text-warning me-2" style="font-size:1.2rem"></i>
+        <strong style="color:var(--pf-azul)">Ações em Lote por Função</strong>
+      </div>
+      <div class="row g-2 align-items-end">
+        <div class="col-12 col-md-4">
+          <label class="form-label small fw-semibold mb-1">
+            <i class="bi bi-tag-fill me-1"></i>Funções
+          </label>
+          <div id="lote-funcoes-container" class="d-flex flex-wrap gap-2">
+            <!-- Checkboxes serão preenchidos dinamicamente -->
+          </div>
+        </div>
+        <div class="col-12 col-md-3">
+          <label class="form-label small fw-semibold mb-1">
+            <i class="bi bi-calendar-check me-1"></i>Data (opcional)
+          </label>
+          <select class="form-select form-select-sm" id="lote-data">
+            <option value="">Todas as datas</option>
+          </select>
+        </div>
+        <div class="col-12 col-md-5">
+          <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-sm btn-warning" onclick="aplicarIgnorarLote(true)" title="Marcar como IGNORAR todas as vagas das funções selecionadas">
+              <i class="bi bi-dash-circle me-1"></i>Ignorar Selecionadas
+            </button>
+            <button class="btn btn-sm btn-success" onclick="aplicarIgnorarLote(false)" title="Remover IGNORAR das vagas das funções selecionadas">
+              <i class="bi bi-check-circle me-1"></i>Desfazer Ignorar
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="limparSelecaoLote()">
+              <i class="bi bi-x-circle me-1"></i>Limpar Seleção
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="mt-2 small text-muted">
+        <i class="bi bi-info-circle me-1"></i>
+        Selecione uma ou mais funções e (opcionalmente) uma data específica. Depois clique em "Ignorar Selecionadas" para marcar todas as vagas correspondentes como IGNORAR em lote.
+      </div>
+    </div>
+
     <!-- Filtros -->
     <div class="card p-2 mb-3 no-print shadow-sm">
       <div class="row g-2 align-items-end">
@@ -940,135 +984,279 @@
     <h5 class="section-title">Relatórios</h5>
 
     <ul class="nav nav-tabs mb-3" id="rel-tabs">
-      <li class="nav-item"><a class="nav-link active" href="#" onclick="showRel('rel-disponibilidade');return false">Disponibilidade por Período</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="showRel('rel-vagas');return false">Vagas por Data e Função</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="showRel('rel-cruzamento');return false">Cruzamento Vaga × Servidor</a></li>
+      <li class="nav-item">
+        <a class="nav-link active" href="#" onclick="showRel('rel-grade');return false">
+          <i class="bi bi-table me-1"></i>Grade Preenchida
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="#" onclick="showRel('rel-carga');return false">
+          <i class="bi bi-bar-chart-fill me-1"></i>Carga por Servidor
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="#" onclick="showRel('rel-abertas');return false">
+          <i class="bi bi-exclamation-circle me-1"></i>Vagas em Aberto
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="#" onclick="showRel('rel-disponibilidade');return false">
+          <i class="bi bi-people-fill me-1"></i>Disponibilidade
+        </a>
+      </li>
     </ul>
 
-    <!-- Relatório 1: Disponibilidade por período -->
-    <div id="rel-disponibilidade">
+    <!-- ── Sub-tab: Grade Preenchida ── -->
+    <div id="rel-grade">
       <div class="card p-3 mb-3 no-print shadow-sm">
         <div class="row g-2 align-items-end">
-          <div class="col-12 col-sm-4 col-md-3">
-            <label class="form-label small fw-semibold mb-1">Data Inicial</label>
-            <input type="date" class="form-control form-control-sm" id="rel-dt-ini" onchange="renderRelDisp()" />
+          <div class="col-12 col-sm-6 col-md-3">
+            <label class="form-label small fw-semibold mb-1">Servidor</label>
+            <select class="form-select form-select-sm" id="relg-filt-servidor" onchange="renderRelGrade()">
+              <option value="">Todos os servidores</option>
+            </select>
           </div>
-          <div class="col-12 col-sm-4 col-md-3">
-            <label class="form-label small fw-semibold mb-1">Data Final</label>
-            <input type="date" class="form-control form-control-sm" id="rel-dt-fim" onchange="renderRelDisp()" />
+          <div class="col-12 col-sm-6 col-md-2">
+            <label class="form-label small fw-semibold mb-1">Data</label>
+            <select class="form-select form-select-sm" id="relg-filt-data" onchange="renderRelGrade()">
+              <option value="">Todas as datas</option>
+            </select>
           </div>
-          <div class="col-12 col-sm-4 col-md-3">
+          <div class="col-12 col-sm-6 col-md-2">
             <label class="form-label small fw-semibold mb-1">Função</label>
-            <select class="form-select form-select-sm" id="rel-funcao" onchange="renderRelDisp()">
+            <select class="form-select form-select-sm" id="relg-filt-funcao" onchange="renderRelGrade()">
+              <option value="">Todas</option>
+            </select>
+          </div>
+          <div class="col-12 col-sm-6 col-md-2">
+            <label class="form-label small fw-semibold mb-1">Turma</label>
+            <input type="text" class="form-control form-control-sm" id="relg-filt-turma"
+                   placeholder="Ex: K (11)" oninput="renderRelGrade()" />
+          </div>
+          <div class="col-12 col-sm-6 col-md-2">
+            <label class="form-label small fw-semibold mb-1">Status</label>
+            <select class="form-select form-select-sm" id="relg-filt-status" onchange="renderRelGrade()">
+              <option value="">Todos</option>
+              <option value="preenchido">Preenchidas</option>
+              <option value="aberto">Em aberto</option>
+              <option value="ignorado">Ignoradas</option>
+              <option value="conflito">Com conflito</option>
+            </select>
+          </div>
+          <div class="col-12 col-md-auto d-flex align-items-end gap-2">
+            <button class="btn btn-sm btn-outline-secondary" onclick="exportarCSV('tbl-relg','grade_preenchida')">
+              <i class="bi bi-download me-1"></i>CSV
+            </button>
+            <button class="btn btn-sm btn-link text-secondary p-0" onclick="limparFiltrosRelGrade()" title="Limpar filtros">
+              <i class="bi bi-x-circle"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-2 mb-3">
+        <div class="col-6 col-md">
+          <div class="card text-center p-2 shadow-sm" style="background:var(--pf-azul);color:#fff;border-radius:10px">
+            <div class="small opacity-75">Total Vagas</div>
+            <div style="font-size:1.6rem;font-weight:700" id="relg-cnt-total">0</div>
+          </div>
+        </div>
+        <div class="col-6 col-md">
+          <div class="card text-center p-2 shadow-sm" style="background:#2e7d32;color:#fff;border-radius:10px">
+            <div class="small opacity-75">Preenchidas</div>
+            <div style="font-size:1.6rem;font-weight:700" id="relg-cnt-preen">0</div>
+          </div>
+        </div>
+        <div class="col-6 col-md">
+          <div class="card text-center p-2 shadow-sm" style="background:#e65100;color:#fff;border-radius:10px">
+            <div class="small opacity-75">Em Aberto</div>
+            <div style="font-size:1.6rem;font-weight:700" id="relg-cnt-aberto">0</div>
+          </div>
+        </div>
+        <div class="col-6 col-md">
+          <div class="card text-center p-2 shadow-sm" style="background:#00acc1;color:#fff;border-radius:10px">
+            <div class="small opacity-75">Ignoradas</div>
+            <div style="font-size:1.6rem;font-weight:700" id="relg-cnt-ignor">0</div>
+          </div>
+        </div>
+        <div class="col-12 col-md">
+          <div class="card text-center p-2 shadow-sm" style="background:#f57f17;color:#fff;border-radius:10px">
+            <div class="small opacity-75">Conflitos</div>
+            <div style="font-size:1.6rem;font-weight:700" id="relg-cnt-conf">0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0" id="tbl-relg">
+              <thead style="background:var(--pf-azul);color:#fff">
+                <tr>
+                  <th>Data</th><th>Horário</th><th>Módulo</th><th>Cód. Aula</th>
+                  <th>Turma</th><th>Função</th><th>Servidor Alocado</th><th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="tbl-relg-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card-footer text-muted small" id="relg-footer">0 registro(s)</div>
+      </div>
+    </div>
+
+    <!-- ── Sub-tab: Carga por Servidor ── -->
+    <div id="rel-carga" style="display:none">
+      <div class="card p-3 mb-3 no-print shadow-sm">
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-sm-6 col-md-3">
+            <label class="form-label small fw-semibold mb-1">Função</label>
+            <select class="form-select form-select-sm" id="relc-filt-funcao" onchange="renderRelCarga()">
               <option value="">Todas</option>
               <option value="PROFESSOR">PROFESSOR</option>
               <option value="MONITOR">MONITOR</option>
             </select>
           </div>
-          <div class="col-12 col-md-3 d-flex gap-2">
-            <button class="btn btn-sm btn-outline-secondary w-100" onclick="exportarCSV('tbl-rel-disp','disponibilidade')">
-              <i class="bi bi-download me-1"></i>Exportar CSV
+          <div class="col-12 col-md-auto d-flex align-items-end">
+            <button class="btn btn-sm btn-outline-secondary" onclick="exportarCSV('tbl-relc','carga_servidores')">
+              <i class="bi bi-download me-1"></i>CSV
             </button>
           </div>
         </div>
       </div>
+
+      <div class="row g-2 mb-3">
+        <div class="col-6 col-md-3">
+          <div class="card text-center p-2 shadow-sm" style="background:var(--pf-azul);color:#fff;border-radius:10px">
+            <div class="small opacity-75">Servidores Escalados</div>
+            <div style="font-size:1.6rem;font-weight:700" id="relc-cnt-serv">0</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card text-center p-2 shadow-sm" style="background:#2e7d32;color:#fff;border-radius:10px">
+            <div class="small opacity-75">Total Alocações</div>
+            <div style="font-size:1.6rem;font-weight:700" id="relc-cnt-total">0</div>
+          </div>
+        </div>
+      </div>
+
       <div class="card shadow-sm">
         <div class="card-body p-0">
           <div class="table-responsive">
-            <table class="table table-hover table-sm mb-0" id="tbl-rel-disp">
+            <table class="table table-hover table-sm mb-0" id="tbl-relc">
               <thead style="background:var(--pf-azul);color:#fff">
                 <tr>
-                  <th>Nome</th><th>Cargo</th><th>Lotação</th><th>Função</th>
-                  <th>Data Início</th><th>Data Fim</th><th>Telefone</th><th>E-mail</th>
-
+                  <th>Servidor</th><th>Função</th>
+                  <th style="width:90px" class="text-center">Qtd. Aulas</th>
+                  <th>Datas Alocadas</th>
+                  <th style="width:140px">Distribuição</th>
                 </tr>
               </thead>
-              <tbody id="tbl-rel-disp-body"></tbody>
+              <tbody id="tbl-relc-body"></tbody>
             </table>
           </div>
         </div>
-        <div class="card-footer text-muted small" id="rel-disp-footer"></div>
+        <div class="card-footer text-muted small" id="relc-footer">0 servidor(es)</div>
       </div>
     </div>
 
-    <!-- Relatório 2: Vagas por data -->
-    <div id="rel-vagas" style="display:none">
+    <!-- ── Sub-tab: Vagas em Aberto ── -->
+    <div id="rel-abertas" style="display:none">
       <div class="card p-3 mb-3 no-print shadow-sm">
         <div class="row g-2 align-items-end">
           <div class="col-12 col-sm-6 col-md-3">
-            <label class="form-label small fw-semibold mb-1">Filtrar Data</label>
-            <select class="form-select form-select-sm" id="rel2-data" onchange="renderRelVagas()">
+            <label class="form-label small fw-semibold mb-1">Data</label>
+            <select class="form-select form-select-sm" id="rela-filt-data" onchange="renderRelAbertas()">
               <option value="">Todas as datas</option>
             </select>
           </div>
           <div class="col-12 col-sm-6 col-md-3">
             <label class="form-label small fw-semibold mb-1">Função</label>
-            <select class="form-select form-select-sm" id="rel2-funcao" onchange="renderRelVagas()">
+            <select class="form-select form-select-sm" id="rela-filt-funcao" onchange="renderRelAbertas()">
               <option value="">Todas</option>
             </select>
           </div>
-          <div class="col-12 col-md-3">
-            <button class="btn btn-sm btn-outline-secondary w-100" onclick="exportarCSV('tbl-rel-vagas','vagas_por_data')">
-              <i class="bi bi-download me-1"></i>Exportar CSV
+          <div class="col-12 col-md-auto d-flex align-items-end gap-2">
+            <button class="btn btn-sm btn-outline-secondary" onclick="exportarCSV('tbl-rela','vagas_em_aberto')">
+              <i class="bi bi-download me-1"></i>CSV
+            </button>
+            <button class="btn btn-sm btn-link text-secondary p-0" onclick="limparFiltrosRelAbertas()" title="Limpar filtros">
+              <i class="bi bi-x-circle"></i>
             </button>
           </div>
         </div>
       </div>
+
+      <div class="alert alert-warning py-2 d-flex align-items-center gap-2 mb-3" style="font-size:.88rem">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span>Vagas em aberto (sem alocação): <strong id="rela-cnt-total">0</strong></span>
+      </div>
+
       <div class="card shadow-sm">
         <div class="card-body p-0">
           <div class="table-responsive">
-            <table class="table table-hover table-sm mb-0" id="tbl-rel-vagas">
+            <table class="table table-hover table-sm mb-0" id="tbl-rela">
               <thead style="background:var(--pf-azul);color:#fff">
                 <tr>
-                  <th>Data</th><th>Horário</th><th>Módulo</th><th>Cód. Aula</th>
-                  <th>Função</th><th>Qtd. Vagas</th><th>Turma</th>
+                  <th>Data</th><th>Horário</th><th>Módulo</th>
+                  <th>Cód. Aula</th><th>Turma</th><th>Função</th>
                 </tr>
               </thead>
-              <tbody id="tbl-rel-vagas-body"></tbody>
+              <tbody id="tbl-rela-body"></tbody>
             </table>
           </div>
         </div>
-        <div class="card-footer text-muted small" id="rel-vagas-footer"></div>
+        <div class="card-footer text-muted small" id="rela-footer">0 vaga(s) em aberto</div>
       </div>
     </div>
 
-    <!-- Relatório 3: Cruzamento -->
-    <div id="rel-cruzamento" style="display:none">
-      <div class="alert alert-info no-print">
-        <i class="bi bi-info-circle me-2"></i>
-        Este relatório cruza os servidores disponíveis no período da semana com as vagas <strong>Prof. EPOL</strong> e <strong>Monitor EPOL</strong> em aberto.
+    <!-- ── Sub-tab: Disponibilidade ── -->
+    <div id="rel-disponibilidade" style="display:none">
+      <div class="card p-3 mb-3 no-print shadow-sm">
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-sm-6 col-md-3">
+            <label class="form-label small fw-semibold mb-1">Buscar Nome</label>
+            <input type="text" class="form-control form-control-sm" id="reld-filt-nome"
+                   placeholder="Digite o nome..." oninput="renderRelDisp()" />
+          </div>
+          <div class="col-12 col-sm-6 col-md-2">
+            <label class="form-label small fw-semibold mb-1">Função</label>
+            <select class="form-select form-select-sm" id="reld-filt-funcao" onchange="renderRelDisp()">
+              <option value="">Todas</option>
+              <option value="PROFESSOR">PROFESSOR</option>
+              <option value="MONITOR">MONITOR</option>
+            </select>
+          </div>
+          <div class="col-12 col-sm-6 col-md-2">
+            <label class="form-label small fw-semibold mb-1">Disponível na data</label>
+            <input type="date" class="form-control form-control-sm" id="reld-filt-data" onchange="renderRelDisp()" />
+          </div>
+          <div class="col-12 col-md-auto d-flex align-items-end gap-2">
+            <button class="btn btn-sm btn-outline-secondary" onclick="exportarCSV('tbl-reld','disponibilidade')">
+              <i class="bi bi-download me-1"></i>CSV
+            </button>
+            <button class="btn btn-sm btn-link text-secondary p-0" onclick="limparFiltrosRelDisp()" title="Limpar filtros">
+              <i class="bi bi-x-circle"></i>
+            </button>
+          </div>
+        </div>
       </div>
-      <div class="row g-3" id="cruzamento-content">
-        <div class="col-12 col-lg-6">
-          <div class="card shadow-sm h-100">
-            <div class="card-header fw-bold" style="background:#1565c0;color:#fff">
-              <i class="bi bi-person-video3 me-2"></i>Professores EPOL Disponíveis × Vagas Prof. EPOL
-            </div>
-            <div class="card-body p-0">
-              <div class="table-responsive">
-                <table class="table table-sm mb-0">
-                  <thead class="table-light"><tr><th>Servidor</th><th>Função</th><th>Período</th><th>Datas com Vagas</th></tr></thead>
-                  <tbody id="cruz-prof-body"></tbody>
-                </table>
-              </div>
-            </div>
+
+      <div class="card shadow-sm">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0" id="tbl-reld">
+              <thead style="background:var(--pf-azul);color:#fff">
+                <tr>
+                  <th>Nome</th><th>Cargo</th><th>Lotação</th><th>Função</th>
+                  <th>Data Início</th><th>Data Fim</th><th>Telefone</th><th>E-mail</th>
+                </tr>
+              </thead>
+              <tbody id="tbl-reld-body"></tbody>
+            </table>
           </div>
         </div>
-        <div class="col-12 col-lg-6">
-          <div class="card shadow-sm h-100">
-            <div class="card-header fw-bold" style="background:#6a1b9a;color:#fff">
-              <i class="bi bi-person-check-fill me-2"></i>Monitores EPOL Disponíveis × Vagas Monitor EPOL
-            </div>
-            <div class="card-body p-0">
-              <div class="table-responsive">
-                <table class="table table-sm mb-0">
-                  <thead class="table-light"><tr><th>Servidor</th><th>Função</th><th>Período</th><th>Datas com Vagas</th></tr></thead>
-                  <tbody id="cruz-mon-body"></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
+        <div class="card-footer text-muted small" id="reld-footer">0 servidor(es)</div>
       </div>
     </div>
 
@@ -1078,6 +1266,146 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+// ============================================================
+// AUTENTICAÇÃO
+// ============================================================
+
+// ⚠️  Altere as senhas abaixo antes de publicar/distribuir o sistema
+const SENHA_ADMIN  = 'Admin@2025';
+const SENHA_VIEWER = 'Prof@2025';
+const AUTH_SESSION_KEY = 'epol-auth-session';
+
+let usuarioAtual = null; // { perfil: 'admin' | 'viewer' }
+
+const PERFIS_CONFIG = {
+  admin: {
+    nome: 'Administrador',
+    abas: ['tab-upload','tab-servidores','tab-grade','tab-montar','tab-impedimentos','tab-relatorio']
+  },
+  viewer: {
+    nome: 'Visualizador',
+    abas: ['tab-relatorio']
+  }
+};
+
+function verificarSessao() {
+  try {
+    const stored = sessionStorage.getItem(AUTH_SESSION_KEY);
+    if (stored) {
+      const sessao = JSON.parse(stored);
+      if (sessao && PERFIS_CONFIG[sessao.perfil]) {
+        usuarioAtual = sessao;
+        mostrarApp();
+        return;
+      }
+    }
+  } catch {}
+  mostrarLogin();
+}
+
+function mostrarLogin() {
+  document.getElementById('login-overlay').style.display = 'flex';
+  document.getElementById('main-navbar').style.display  = 'none';
+  document.getElementById('main-content').style.display = 'none';
+}
+
+function mostrarApp() {
+  document.getElementById('login-overlay').style.display = 'none';
+  document.getElementById('main-navbar').style.display   = '';
+  document.getElementById('main-content').style.display  = '';
+  aplicarPermissoes();
+}
+
+function selecionarPerfil(perfil) {
+  document.getElementById('login-perfil-selecionado').value = perfil;
+
+  // Resetar botões
+  const btnAdmin  = document.getElementById('btn-perfil-admin');
+  const btnViewer = document.getElementById('btn-perfil-viewer');
+  btnAdmin.className  = 'btn btn-outline-primary  flex-fill login-perfil-btn';
+  btnViewer.className = 'btn btn-outline-secondary flex-fill login-perfil-btn';
+
+  // Ativar selecionado
+  if (perfil === 'admin') {
+    btnAdmin.className  = 'btn btn-primary   flex-fill login-perfil-btn perfil-ativo';
+  } else {
+    btnViewer.className = 'btn btn-secondary  flex-fill login-perfil-btn perfil-ativo';
+  }
+
+  document.getElementById('login-erro').textContent = '';
+  document.getElementById('login-senha').focus();
+}
+
+function fazerLogin() {
+  const perfil = document.getElementById('login-perfil-selecionado').value;
+  const senha  = document.getElementById('login-senha').value;
+  const erroEl = document.getElementById('login-erro');
+
+  if (!perfil) {
+    erroEl.textContent = 'Selecione um perfil de acesso.';
+    return;
+  }
+  if (!senha) {
+    erroEl.textContent = 'Digite a senha.';
+    return;
+  }
+
+  const senhaCorreta = perfil === 'admin' ? SENHA_ADMIN : SENHA_VIEWER;
+  if (senha !== senhaCorreta) {
+    erroEl.textContent = 'Senha incorreta. Tente novamente.';
+    document.getElementById('login-senha').value = '';
+    document.getElementById('login-senha').focus();
+    return;
+  }
+
+  usuarioAtual = { perfil };
+  sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(usuarioAtual));
+  erroEl.textContent = '';
+  mostrarApp();
+}
+
+function logout() {
+  if (!confirm('Deseja sair do sistema?')) return;
+  sessionStorage.removeItem(AUTH_SESSION_KEY);
+  usuarioAtual = null;
+
+  // Resetar formulário de login
+  document.getElementById('login-senha').value = '';
+  document.getElementById('login-perfil-selecionado').value = '';
+  document.getElementById('login-erro').textContent = '';
+  document.getElementById('btn-perfil-admin').className  = 'btn btn-outline-primary  flex-fill login-perfil-btn';
+  document.getElementById('btn-perfil-viewer').className = 'btn btn-outline-secondary flex-fill login-perfil-btn';
+
+  mostrarLogin();
+}
+
+function aplicarPermissoes() {
+  if (!usuarioAtual) return;
+  const config = PERFIS_CONFIG[usuarioAtual.perfil];
+  if (!config) return;
+
+  // Badge do usuário na navbar
+  const badge = document.getElementById('user-role-badge');
+  if (badge) {
+    badge.textContent = config.nome;
+    badge.className   = 'badge ' + (usuarioAtual.perfil === 'admin'
+      ? 'bg-warning text-dark'
+      : 'bg-info text-dark');
+  }
+
+  // Mostrar/esconder itens da navbar conforme abas permitidas
+  document.querySelectorAll('#nav-tabs-list .nav-item').forEach(li => {
+    const link = li.querySelector('a[onclick]');
+    if (!link) return;
+    const m = (link.getAttribute('onclick') || '').match(/showTab\('([^']+)'\)/);
+    if (!m) return;
+    li.style.display = config.abas.includes(m[1]) ? '' : 'none';
+  });
+
+  // Navegar para a primeira aba permitida
+  if (config.abas.length) showTab(config.abas[0]);
+}
+
 // ============================================================
 // ESTADO GLOBAL
 // ============================================================
@@ -1090,21 +1418,29 @@ let impedimentos = []; // [{id, servidorNome, servidorFuncao, data, motivo}]
 // NAVEGAÇÃO
 // ============================================================
 function showTab(id) {
-  ['tab-upload','tab-dashboard','tab-servidores','tab-grade','tab-montar','tab-relatorio','tab-impedimentos']
+  ['tab-upload','tab-servidores','tab-grade','tab-montar','tab-relatorio','tab-impedimentos']
     .forEach(t => document.getElementById(t).style.display = 'none');
   document.getElementById(id).style.display = '';
-  if (id === 'tab-montar') renderMontarGrade();
+  if (id === 'tab-montar') {
+    if (firebaseEnabled && db) {
+      carregarAlocacoesFirebase().then(() => renderMontarGrade());
+    } else {
+      carregarAlocacoesLocal();
+      renderMontarGrade();
+    }
+  }
+  if (id === 'tab-relatorio') renderRelatorio();
   if (id === 'tab-impedimentos') renderImpedimentos();
 }
 
 function showRel(id) {
-  ['rel-disponibilidade','rel-vagas','rel-cruzamento']
+  ['rel-grade','rel-carga','rel-abertas','rel-disponibilidade']
     .forEach(r => document.getElementById(r).style.display = 'none');
   document.getElementById(id).style.display = '';
-  document.querySelectorAll('#rel-tabs .nav-link').forEach((el,i) => el.classList.remove('active'));
-  const idx = ['rel-disponibilidade','rel-vagas','rel-cruzamento'].indexOf(id);
-  document.querySelectorAll('#rel-tabs .nav-link')[idx].classList.add('active');
-  if (id === 'rel-cruzamento') renderCruzamento();
+  document.querySelectorAll('#rel-tabs .nav-link').forEach(el => el.classList.remove('active'));
+  const idx = ['rel-grade','rel-carga','rel-abertas','rel-disponibilidade'].indexOf(id);
+  if (idx >= 0) document.querySelectorAll('#rel-tabs .nav-link')[idx].classList.add('active');
+  renderRelatorio();
 }
 
 // ============================================================
@@ -1289,97 +1625,9 @@ function checkBothLoaded() {
   if (grade.length && servidores.length) {
     document.getElementById('btn-go-wrap').style.display = '';
     buildFilters();
-    renderDashboard();
     renderServidores();
     renderGrade();
-    renderRelDisp();
-    renderRelVagas();
   }
-}
-
-// ============================================================
-// DASHBOARD
-// ============================================================
-function renderDashboard() {
-  if (!grade || grade.length === 0 || !servidores || servidores.length === 0) {
-    console.warn('Dashboard: aguardando dados completos');
-    return;
-  }
-  
-  const epol = grade.filter(g => g && g.funcao && isEpol(g.funcao));
-  const profEpol = epol.filter(g => g && g.funcao && g.funcao.toUpperCase().includes('PROF'));
-  const monEpol  = epol.filter(g => g && g.funcao && g.funcao.toUpperCase().includes('MONITOR'));
-
-  // Datas da semana
-  const datasGrade = [...new Set(grade.filter(g => g && g.data).map(g => g.data))].sort();
-  const dtIni = datasGrade[0], dtFim = datasGrade[datasGrade.length-1];
-
-  // Servidores disponíveis para a semana
-  const dispSemana = servidores.filter(s => s && isDisponivelNoIntervalo(s, dtIni, dtFim));
-
-  set('cnt-total-serv', dispSemana.length);
-  set('cnt-prof', dispSemana.filter(s => s && s.funcao && (s.funcao.includes('PROFESSOR') || s.funcao.includes('PROF'))).length);
-  set('cnt-mon', dispSemana.filter(s => s && s.funcao && s.funcao.includes('MONITOR')).length);
-  set('cnt-vagas-prof', profEpol.length);
-  set('cnt-vagas-mon', monEpol.length);
-  set('cnt-aulas', [...new Set(grade.map(g => g.data + g.horario + g.codAula + g.turma))].length);
-
-  // Chart vagas por data
-  const vagasData = {};
-  epol.forEach(g => {
-    if (!vagasData[g.data]) vagasData[g.data] = { prof: 0, mon: 0 };
-    if (g.funcao.toUpperCase().includes('PROF')) vagasData[g.data].prof++;
-    else vagasData[g.data].mon++;
-  });
-  let chartHtml = '<div style="overflow-x:auto"><table class="table table-sm table-bordered"><thead class="table-light"><tr><th>Data</th><th>Prof. EPOL</th><th>Monitor EPOL</th><th>Total</th><th>Barra</th></tr></thead><tbody>';
-  const maxVal = Math.max(...Object.values(vagasData).map(v => v.prof + v.mon), 1);
-  Object.entries(vagasData).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([dt, v]) => {
-    const tot = v.prof + v.mon;
-    const pct = Math.round(tot/maxVal*100);
-    chartHtml += `<tr><td>${formatDate(dt)}</td><td><span class="badge badge-professor">${v.prof}</span></td><td><span class="badge badge-monitor">${v.mon}</span></td><td><strong>${tot}</strong></td><td><div class="progress" style="min-width:80px"><div class="progress-bar" style="width:${pct}%;background:var(--pf-azul)"></div></div></td></tr>`;
-  });
-  chartHtml += '</tbody></table></div>';
-  document.getElementById('chart-vagas-data').innerHTML = chartHtml;
-
-  // Chart funções
-  const funcCount = {};
-  grade.forEach(g => { funcCount[g.funcao] = (funcCount[g.funcao]||0)+1; });
-  const sorted = Object.entries(funcCount).sort((a,b)=>b[1]-a[1]);
-  const maxF = Math.max(...sorted.map(x=>x[1]),1);
-  let funcHtml = '<div style="overflow-x:auto"><table class="table table-sm"><tbody>';
-  sorted.forEach(([f,c]) => {
-    const pct = Math.round(c/maxF*100);
-    const isEpolFn = f.toUpperCase().includes('EPOL');
-    funcHtml += `<tr><td style="width:160px;font-size:.85rem">${f}</td><td style="width:40px" class="text-end"><strong>${c}</strong></td><td><div class="progress"><div class="progress-bar ${isEpolFn?'bg-warning':'bg-primary'}" style="width:${pct}%"></div></div></td></tr>`;
-  });
-  funcHtml += '</tbody></table></div>';
-  document.getElementById('chart-funcoes').innerHTML = funcHtml;
-
-  // Servidores da semana
-  let servHtml = '';
-  if (!dispSemana.length) {
-    servHtml = '<p class="text-muted">Nenhum servidor disponível encontrado para o período da grade.</p>';
-  } else {
-    servHtml = '<div class="row g-2">';
-    dispSemana.forEach(s => {
-      const badge = s.funcao.includes('PROFESSOR') ? 'badge-professor' : 'badge-monitor';
-      const periodo = s.dtIni || s.dtFim
-        ? `${s.dtIni ? formatDate(s.dtIni) : '?'} → ${s.dtFim ? formatDate(s.dtFim) : '?'}`
-        : 'Disponibilidade total';
-      servHtml += `<div class="col-12 col-md-6 col-xl-4">
-        <div class="card p-2 h-100" style="border-left:3px solid ${s.funcao.includes('PROFESSOR')?'#1565c0':'#6a1b9a'}">
-          <div class="d-flex justify-content-between align-items-start">
-            <div class="fw-semibold small">${escHtml(s.nome)}</div>
-            <span class="badge ${badge} ms-2">${escHtml(s.funcao)}</span>
-          </div>
-          <div class="text-muted" style="font-size:.78rem">${escHtml(s.cargo)} | ${escHtml(s.lotacao)}</div>
-          <div style="font-size:.78rem"><i class="bi bi-calendar2-range me-1"></i>${escHtml(periodo)}</div>
-        </div>
-      </div>`;
-    });
-    servHtml += '</div>';
-  }
-  document.getElementById('dash-serv-semana').innerHTML = servHtml;
 }
 
 // ============================================================
@@ -1680,28 +1928,20 @@ function buildFilters() {
     console.warn('buildFilters: Grade vazia, pulando...');
     return;
   }
-  
-  const datas   = [...new Set(grade.filter(g => g && g.data).map(g => g.data))].sort();
+
+  const datas    = [...new Set(grade.filter(g => g && g.data).map(g => g.data))].sort();
   const horarios = [...new Set(grade.filter(g => g && g.horario).map(g => g.horario))].sort();
   const modulos  = [...new Set(grade.filter(g => g && g.modulo).map(g => g.modulo))].filter(Boolean).sort();
   const funcoes  = [...new Set(grade.filter(g => g && g.funcao).map(g => g.funcao))].sort();
 
-  // Multi-select dropdowns da grade
+  // Multi-select dropdowns da aba Grade
   buildMultiSelectMenu('grade-filt-data',    datas,    d => formatDate(d));
   buildMultiSelectMenu('grade-filt-horario', horarios);
   buildMultiSelectMenu('grade-filt-modulo',  modulos);
   buildMultiSelectMenu('grade-filt-funcao',  funcoes);
 
-  // Selects simples dos relatórios
-  populateSelect('rel2-data',   datas,   d => formatDate(d), d => d);
-  populateSelect('rel2-funcao', funcoes);
-
-  // Datas padrão no relatório de disponibilidade
-  if (datas.length) {
-    document.getElementById('rel-dt-ini').value = datas[0];
-    document.getElementById('rel-dt-fim').value = datas[datas.length-1];
-    renderRelDisp();
-  }
+  // Filtros do novo Relatórios
+  buildRelFilters(datas, funcoes);
 }
 
 function renderGrade() {
@@ -1768,140 +2008,6 @@ function renderGrade() {
   });
   document.getElementById('tbl-grade-body').innerHTML = html || '<tr><td colspan="8" class="text-center text-muted py-3">Nenhum registro encontrado</td></tr>';
   document.getElementById('grade-count-footer').textContent = filtered.length + ' registro(s) exibido(s)';
-}
-
-// ============================================================
-// RELATÓRIO 1: DISPONIBILIDADE
-// ============================================================
-function renderRelDisp() {
-  if (!servidores || servidores.length === 0) {
-    document.getElementById('tbl-rel-disp-body').innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">Nenhum servidor carregado</td></tr>';
-    document.getElementById('rel-disp-footer').textContent = '0 servidor(es)';
-    return;
-  }
-  
-  const dtIni = document.getElementById('rel-dt-ini')?.value || '';
-  const dtFim = document.getElementById('rel-dt-fim')?.value || '';
-  const funcFilt = document.getElementById('rel-funcao')?.value?.toUpperCase() || '';
-
-  const filtered = servidores.filter(s => {
-    if (!s) return false;
-    if (funcFilt && s.funcao && !s.funcao.includes(funcFilt)) return false;
-    if (dtIni || dtFim) {
-      if (!isDisponivelNoIntervalo(s, dtIni || '1900-01-01', dtFim || '2099-12-31')) return false;
-    }
-    return true;
-  });
-
-  let html = '';
-  filtered.forEach(s => {
-    if (!s) return;
-    const badge = s.funcao && s.funcao.includes('PROFESSOR') ? 'badge-professor' : (s.funcao && s.funcao.includes('MONITOR') ? 'badge-monitor' : 'bg-secondary');
-    html += `<tr>
-      <td class="fw-semibold">${escHtml(s.nome || '')}</td>
-      <td>${escHtml(s.cargo || '')}</td>
-      <td>${escHtml(s.lotacao || '')}</td>
-      <td><span class="badge ${badge}">${escHtml(s.funcao) || 'Não definida'}</span></td>
-      <td>${s.dtIni ? escHtml(formatDate(s.dtIni)) : '—'}</td>
-      <td>${s.dtFim ? escHtml(formatDate(s.dtFim)) : 'Total'}</td>
-      <td>${escHtml(s.tel || '')}</td>
-      <td>${escHtml(s.email || '')}</td>
-    </tr>`;
-  });
-  document.getElementById('tbl-rel-disp-body').innerHTML = html || '<tr><td colspan="8" class="text-center text-muted py-3">Nenhum servidor no período</td></tr>';
-  document.getElementById('rel-disp-footer').textContent = filtered.length + ' servidor(es)';
-}
-
-// ============================================================
-// RELATÓRIO 2: VAGAS POR DATA
-// ============================================================
-function renderRelVagas() {
-  if (!grade || grade.length === 0) {
-    document.getElementById('tbl-rel-vagas-body').innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Nenhuma grade carregada</td></tr>';
-    document.getElementById('rel-vagas-footer').textContent = '0 vaga(s)';
-    return;
-  }
-  
-  const dtFilt = document.getElementById('rel2-data')?.value || '';
-  const funFilt = document.getElementById('rel2-funcao')?.value || '';
-
-  // Agrupar vagas ePol por data+horário+codAula+funcao+turma
-  const filtered = grade.filter(g => {
-    if (!g) return false;
-    if (dtFilt && g.data !== dtFilt) return false;
-    if (funFilt && g.funcao !== funFilt) return false;
-    return true;
-  });
-
-  // Agrupar
-  const grupos = {};
-  filtered.forEach(g => {
-    if (!g) return;
-    const key = `${g.data || ''}|${g.horario || ''}|${g.modulo || ''}|${g.codAula || ''}|${g.funcao || ''}|${g.turma || ''}`;
-    if (!grupos[key]) grupos[key] = { ...g, qtd: 0 };
-    grupos[key].qtd++;
-  });
-
-  const rows = Object.values(grupos).sort((a,b) => (a.data||'').localeCompare(b.data||'') || (a.horario||'').localeCompare(b.horario||''));
-  let html = '';
-  rows.forEach(g => {
-    if (!g) return;
-    const isEpolRow = g.funcao && isEpol(g.funcao);
-    html += `<tr ${isEpolRow?'style="background:#fffde7"':''}>
-      <td>${escHtml(formatDate(g.data))}</td>
-      <td>${escHtml(g.horario)}</td>
-      <td>${escHtml(g.modulo)}</td>
-      <td>${escHtml(g.codAula)}</td>
-      <td>${escHtml(g.funcao)}${isEpolRow ? ' <span class="badge bg-warning text-dark">EPOL</span>' : ''}</td>
-      <td class="text-center fw-bold">${g.qtd}</td>
-      <td>${escHtml(g.turma)}</td>
-    </tr>`;
-  });
-  document.getElementById('tbl-rel-vagas-body').innerHTML = html || '<tr><td colspan="7" class="text-center text-muted py-3">Nenhum dado</td></tr>';
-  document.getElementById('rel-vagas-footer').textContent = rows.length + ' linha(s)';
-}
-
-// ============================================================
-// RELATÓRIO 3: CRUZAMENTO
-// ============================================================
-function renderCruzamento() {
-  const datasGrade = [...new Set(grade.map(g => g.data))].sort();
-  const dtIni = datasGrade[0] || '', dtFim = datasGrade[datasGrade.length-1] || '';
-
-  // Vagas em aberto por data
-  const vagasProfData = {};
-  const vagasMonData = {};
-  grade.filter(g => g.funcao === 'Prof. EPOL' && !g.servidor).forEach(g => {
-    vagasProfData[g.data] = (vagasProfData[g.data]||0)+1;
-  });
-  grade.filter(g => g.funcao === 'Monitor EPOL' && !g.servidor).forEach(g => {
-    vagasMonData[g.data] = (vagasMonData[g.data]||0)+1;
-  });
-
-  function buildCruzBody(funcFilter, vagasMap) {
-    const dispServ = servidores.filter(s => {
-      // Para vagas de MONITOR: professores também são elegíveis
-      const fok = funcFilter === 'PROFESSOR'
-        ? s.funcao.includes('PROFESSOR')
-        : s.funcao.includes('MONITOR') || s.funcao.includes('PROFESSOR');
-      return fok && isDisponivelNoIntervalo(s, dtIni, dtFim);
-    });
-    if (!dispServ.length) return '<tr><td colspan="4" class="text-center text-muted py-2">Nenhum servidor disponível no período</td></tr>';
-    return dispServ.map(s => {
-      // Datas com vagas em que o servidor está disponível
-      const datas = Object.keys(vagasMap).filter(d => isDisponivelNaData(s, d) && vagasMap[d] > 0);
-      const datasStr = datas.length ? datas.map(d => `${formatDate(d)} (${vagasMap[d]} vagas)`).join(', ') : '<span class="text-muted">Sem vagas abertas</span>';
-      return `<tr>
-        <td class="fw-semibold">${escHtml(s.nome)}</td>
-        <td>${escHtml(s.funcao)}</td>
-        <td style="font-size:.82rem">${s.dtIni ? escHtml(formatDate(s.dtIni)) : '—'} → ${s.dtFim ? escHtml(formatDate(s.dtFim)) : '—'}</td>
-        <td style="font-size:.82rem">${datasStr}</td>
-      </tr>`;
-    }).join('');
-  }
-
-  document.getElementById('cruz-prof-body').innerHTML = buildCruzBody('PROFESSOR', vagasProfData);
-  document.getElementById('cruz-mon-body').innerHTML = buildCruzBody('MONITOR', vagasMonData);
 }
 
 // ============================================================
@@ -2074,6 +2180,9 @@ let alocacoes = {};
 
 // Filtro multi-seleção de funções
 let mgFuncoesSelecionadas = new Set();
+
+// Seleção em lote por função (ações em lote)
+let loteFuncoesSelecionadas = new Set();
 
 function carregarAlocacoes() {
   if (firebaseEnabled && db) {
@@ -2413,7 +2522,6 @@ function atualizarCardsMG() {
 }
 
 function renderMontarGrade() {
-  carregarAlocacoes();
   if (!grade.length || !servidores.length) {
     document.getElementById('tbl-montar-body').innerHTML =
       '<tr><td colspan="9" class="text-center text-muted py-4">Carregue os arquivos na aba <strong>Carregar Arquivos</strong> para começar.</td></tr>';
@@ -2507,13 +2615,12 @@ function renderMontarGrade() {
   const rows = grade.filter(g => {
     if (dtFilt  && g.data !== dtFilt)          return false;
     if (mgFuncoesSelecionadas.size > 0 && !mgFuncoesSelecionadas.has(g.funcao)) return false;
-    if (turmFlt && !g.turma.toLowerCase().includes(turmFlt)) return false;
+    if (turmFlt && !(g.turma || '').toLowerCase().includes(turmFlt)) return false;
     if (statusFlt) {
       const srv = alocacoes[g.slotKey];
       if (statusFlt === 'aberto'     && srv)            return false;
       if (statusFlt === 'preenchido' && (!srv || srv === '[IGNORAR]' || conf.has(g.slotKey))) return false;
       if (statusFlt === 'ignorado'   && srv !== '[IGNORAR]') return false;
-      if (statusFlt === 'conflito'   && !conf.has(g.slotKey))          return false;
       if (statusFlt === 'conflito'   && !conf.has(g.slotKey))          return false;
     }
     return true;
@@ -2675,6 +2782,7 @@ function renderMontarGrade() {
 
   atualizarCardsMG();
   atualizarContagemSelecionados();
+  popularLoteFuncoes();
 }
 
 // ============================================================
@@ -2763,6 +2871,449 @@ function ignorarSelecionados(grupo) {
   salvarAlocacoes();
   renderMontarGrade();
   mostrarToast(`${checkboxes.length} slot(s) marcado(s) como IGNORAR`);
+}
+
+// ============================================================
+// AÇÕES EM LOTE POR FUNÇÃO
+// ============================================================
+
+// Popular checkboxes de funções no painel de ações em lote
+function popularLoteFuncoes() {
+  if (!grade.length) return;
+  
+  const container = document.getElementById('lote-funcoes-container');
+  const loteDatas = document.getElementById('lote-data');
+  
+  // Obter funções únicas da grade
+  const funcoes = [...new Set(grade.map(g => g.funcao).filter(f => f))].sort();
+  
+  // Popular checkboxes de funções
+  container.innerHTML = '';
+  funcoes.forEach(funcao => {
+    const label = document.createElement('label');
+    label.className = 'lote-funcao-check';
+    if (loteFuncoesSelecionadas.has(funcao)) {
+      label.classList.add('checked');
+    }
+    
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.value = funcao;
+    checkbox.checked = loteFuncoesSelecionadas.has(funcao);
+    checkbox.onchange = () => toggleLoteFuncao(funcao, checkbox, label);
+    
+    const span = document.createElement('span');
+    span.textContent = funcao;
+    
+    label.appendChild(checkbox);
+    label.appendChild(span);
+    container.appendChild(label);
+  });
+  
+  // Popular select de datas (apenas se vazio)
+  if (loteDatas.options.length <= 1) {
+    const datas = [...new Set(grade.map(g => g.data))].sort();
+    datas.forEach(d => {
+      const option = document.createElement('option');
+      option.value = d;
+      option.textContent = formatDate(d);
+      loteDatas.appendChild(option);
+    });
+  }
+}
+
+// Alternar seleção de uma função
+function toggleLoteFuncao(funcao, checkbox, label) {
+  if (checkbox.checked) {
+    loteFuncoesSelecionadas.add(funcao);
+    label.classList.add('checked');
+  } else {
+    loteFuncoesSelecionadas.delete(funcao);
+    label.classList.remove('checked');
+  }
+}
+
+// Aplicar ignorar em lote para funções selecionadas
+function aplicarIgnorarLote(ignorar) {
+  if (loteFuncoesSelecionadas.size === 0) {
+    alert('Selecione pelo menos uma função!');
+    return;
+  }
+  
+  const dataSelecionada = document.getElementById('lote-data').value;
+  
+  // Filtrar slots que correspondem às funções e data selecionadas
+  const slotsAfetados = grade.filter(g => {
+    if (!loteFuncoesSelecionadas.has(g.funcao)) return false;
+    if (dataSelecionada && g.data !== dataSelecionada) return false;
+    return true;
+  });
+  
+  if (slotsAfetados.length === 0) {
+    alert('Nenhuma vaga encontrada com as funções e data selecionadas!');
+    return;
+  }
+  
+  const acao = ignorar ? 'IGNORAR' : 'remover IGNORAR de';
+  const funcoesLista = [...loteFuncoesSelecionadas].join(', ');
+  const dataMsg = dataSelecionada ? ` na data ${formatDate(dataSelecionada)}` : ' em todas as datas';
+  
+  const confirmMsg = `Tem certeza que deseja ${acao} ${slotsAfetados.length} vaga(s) das funções:\n${funcoesLista}${dataMsg}?`;
+  
+  if (!confirm(confirmMsg)) {
+    return;
+  }
+  
+  // Aplicar a ação
+  let contador = 0;
+  slotsAfetados.forEach(g => {
+    if (ignorar) {
+      // Marcar como [IGNORAR]
+      alocacoes[g.slotKey] = '[IGNORAR]';
+      contador++;
+    } else {
+      // Remover [IGNORAR] se estiver marcado
+      if (alocacoes[g.slotKey] === '[IGNORAR]') {
+        delete alocacoes[g.slotKey];
+        contador++;
+      }
+    }
+  });
+  
+  // Salvar e atualizar UI
+  salvarAlocacoes();
+  renderMontarGrade();
+  
+  const msgAcao = ignorar ? 'marcadas como IGNORAR' : 'IGNORAR removido';
+  mostrarToast(`${contador} vaga(s) ${msgAcao}`);
+}
+
+// Limpar seleção de funções
+function limparSelecaoLote() {
+  loteFuncoesSelecionadas.clear();
+  document.getElementById('lote-data').value = '';
+  
+  // Atualizar checkboxes
+  document.querySelectorAll('.lote-funcao-check').forEach(label => {
+    label.classList.remove('checked');
+    const checkbox = label.querySelector('input[type="checkbox"]');
+    if (checkbox) checkbox.checked = false;
+  });
+}
+
+// ============================================================
+// RELATÓRIOS (novo)
+// ============================================================
+
+let relAbaAtiva = 'rel-grade';
+
+function renderRelatorio() {
+  if (relAbaAtiva === 'rel-grade') renderRelGrade();
+  else if (relAbaAtiva === 'rel-carga') renderRelCarga();
+  else if (relAbaAtiva === 'rel-abertas') renderRelAbertas();
+  else if (relAbaAtiva === 'rel-disponibilidade') renderRelDisp();
+}
+
+// Preenche os selects dos filtros do Relatórios a partir dos dados da grade
+function buildRelFilters(datas, funcoes) {
+  populateSelect('relg-filt-data',    datas,   d => formatDate(d), d => d);
+  populateSelect('relg-filt-funcao',  funcoes);
+  populateSelect('rela-filt-data',    datas,   d => formatDate(d), d => d);
+  populateSelect('rela-filt-funcao',  funcoes);
+
+  // Servidores já alocados (para filtro da grade preenchida)
+  const nomesAlocados = [...new Set(
+    Object.values(alocacoes).filter(v => v && v !== '[IGNORAR]')
+  )].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  populateSelect('relg-filt-servidor', nomesAlocados);
+}
+
+function renderRelGrade() {
+  relAbaAtiva = 'rel-grade';
+  if (!grade.length) {
+    document.getElementById('tbl-relg-body').innerHTML =
+      '<tr><td colspan="8" class="text-center text-muted py-3">Nenhuma grade carregada</td></tr>';
+    ['relg-cnt-total','relg-cnt-preen','relg-cnt-aberto','relg-cnt-ignor','relg-cnt-conf']
+      .forEach(id => set(id, 0));
+    return;
+  }
+
+  const servFilt   = document.getElementById('relg-filt-servidor')?.value || '';
+  const dataFilt   = document.getElementById('relg-filt-data')?.value || '';
+  const funcFilt   = document.getElementById('relg-filt-funcao')?.value || '';
+  const turmFilt   = (document.getElementById('relg-filt-turma')?.value || '').toLowerCase();
+  const statusFilt = document.getElementById('relg-filt-status')?.value || '';
+
+  const conf = getConflitos();
+
+  const filtered = grade.filter(g => {
+    if (!g) return false;
+    if (dataFilt && g.data !== dataFilt) return false;
+    if (funcFilt && g.funcao !== funcFilt) return false;
+    if (turmFilt && !((g.turma || '').toLowerCase().includes(turmFilt))) return false;
+
+    const srv = alocacoes[g.slotKey] || g.servidor || '';
+    if (servFilt && srv !== servFilt) return false;
+
+    if (statusFilt) {
+      const isIgn  = srv === '[IGNORAR]';
+      const isConf = conf.has(g.slotKey);
+      if (statusFilt === 'preenchido' && (!srv || isIgn)) return false;
+      if (statusFilt === 'aberto'     && srv)             return false;
+      if (statusFilt === 'ignorado'   && !isIgn)          return false;
+      if (statusFilt === 'conflito'   && !isConf)         return false;
+    }
+    return true;
+  });
+
+  // Cards
+  const preen  = filtered.filter(g => { const s = alocacoes[g.slotKey]||g.servidor||''; return s && s !== '[IGNORAR]'; }).length;
+  const ignor  = filtered.filter(g => (alocacoes[g.slotKey]||'') === '[IGNORAR]').length;
+  const confC  = filtered.filter(g => conf.has(g.slotKey)).length;
+  set('relg-cnt-total',  filtered.length);
+  set('relg-cnt-preen',  preen);
+  set('relg-cnt-aberto', filtered.length - preen - ignor);
+  set('relg-cnt-ignor',  ignor);
+  set('relg-cnt-conf',   confC);
+
+  let html = '';
+  filtered.forEach(g => {
+    const srv       = alocacoes[g.slotKey] || g.servidor || '';
+    const isIgn     = srv === '[IGNORAR]';
+    const isConf    = conf.has(g.slotKey);
+    const isPreench = srv && !isIgn;
+
+    let rowCls = '', statusBadge = '';
+    if (isConf) {
+      rowCls = 'table-warning';
+      statusBadge = '<span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>Conflito</span>';
+    } else if (isIgn) {
+      rowCls = '';
+      statusBadge = '<span class="badge bg-info text-white">Ignorado</span>';
+    } else if (isPreench) {
+      rowCls = 'table-success';
+      statusBadge = '<span class="badge bg-success"><i class="bi bi-check-lg me-1"></i>OK</span>';
+    } else {
+      rowCls = '';
+      statusBadge = '<span class="badge bg-secondary">Em aberto</span>';
+    }
+
+    const fUp = (g.funcao || '').toUpperCase();
+    const fBadge = fUp.includes('PROFESSOR') ? 'badge-professor'
+                 : fUp.includes('MONITOR')   ? 'badge-monitor' : 'bg-secondary';
+
+    const srvCell = isIgn
+      ? '<span class="text-muted fst-italic">—</span>'
+      : (isPreench ? escHtml(srv) : '<span class="text-warning small">Em aberto</span>');
+
+    html += `<tr class="${rowCls}">
+      <td>${escHtml(formatDate(g.data))}</td>
+      <td>${escHtml(g.horario)}</td>
+      <td>${escHtml(g.modulo)}</td>
+      <td>${escHtml(g.codAula)}</td>
+      <td>${escHtml(g.turma)}</td>
+      <td><span class="badge ${fBadge}">${escHtml(g.funcao)}</span></td>
+      <td class="fw-semibold">${srvCell}</td>
+      <td>${statusBadge}</td>
+    </tr>`;
+  });
+
+  document.getElementById('tbl-relg-body').innerHTML = html ||
+    '<tr><td colspan="8" class="text-center text-muted py-3">Nenhum registro encontrado</td></tr>';
+  document.getElementById('relg-footer').textContent = filtered.length + ' registro(s)';
+}
+
+function renderRelCarga() {
+  relAbaAtiva = 'rel-carga';
+  if (!servidores.length) {
+    document.getElementById('tbl-relc-body').innerHTML =
+      '<tr><td colspan="5" class="text-center text-muted py-3">Nenhum servidor carregado</td></tr>';
+    set('relc-cnt-serv', 0); set('relc-cnt-total', 0);
+    return;
+  }
+
+  const funcFilt = (document.getElementById('relc-filt-funcao')?.value || '').toUpperCase();
+
+  // Montar mapa de carga a partir das alocações
+  const carga = {};
+  grade.forEach(g => {
+    const srv = alocacoes[g.slotKey];
+    if (!srv || srv === '[IGNORAR]') return;
+    if (!carga[srv]) carga[srv] = { funcao: '', datas: new Set(), count: 0 };
+    carga[srv].count++;
+    carga[srv].datas.add(g.data);
+  });
+
+  // Enriquecer com dados do servidor
+  servidores.forEach(s => {
+    if (carga[s.nome]) carga[s.nome].funcao = s.funcao || '';
+  });
+
+  let entries = Object.entries(carga);
+  if (funcFilt) {
+    entries = entries.filter(([, v]) => (v.funcao || '').toUpperCase().includes(funcFilt));
+  }
+  entries.sort((a, b) => b[1].count - a[1].count);
+
+  const maxCount = entries.length ? entries[0][1].count : 1;
+  set('relc-cnt-serv',  entries.length);
+  set('relc-cnt-total', entries.reduce((s, [, v]) => s + v.count, 0));
+
+  let html = '';
+  entries.forEach(([nome, v]) => {
+    const pct   = Math.round(v.count / maxCount * 100);
+    const fUp   = (v.funcao || '').toUpperCase();
+    const badge = fUp.includes('PROFESSOR') ? 'badge-professor'
+                : fUp.includes('MONITOR')   ? 'badge-monitor' : 'bg-secondary';
+    const datasStr = [...v.datas].sort().map(d => formatDate(d)).join(', ');
+    html += `<tr>
+      <td class="fw-semibold">${escHtml(nome)}</td>
+      <td>${v.funcao ? '<span class="badge ' + badge + '">' + escHtml(v.funcao) + '</span>' : '—'}</td>
+      <td class="text-center fw-bold" style="font-size:1.1rem">${v.count}</td>
+      <td style="font-size:.8rem">${escHtml(datasStr)}</td>
+      <td><div class="progress"><div class="progress-bar" style="width:${pct}%;background:var(--pf-azul)"></div></div></td>
+    </tr>`;
+  });
+
+  document.getElementById('tbl-relc-body').innerHTML = html ||
+    '<tr><td colspan="5" class="text-center text-muted py-3">Nenhuma alocação encontrada</td></tr>';
+  document.getElementById('relc-footer').textContent = entries.length + ' servidor(es) escalado(s)';
+}
+
+function renderRelAbertas() {
+  relAbaAtiva = 'rel-abertas';
+  if (!grade.length) {
+    document.getElementById('tbl-rela-body').innerHTML =
+      '<tr><td colspan="6" class="text-center text-muted py-3">Nenhuma grade carregada</td></tr>';
+    set('rela-cnt-total', 0);
+    return;
+  }
+
+  const dataFilt = document.getElementById('rela-filt-data')?.value || '';
+  const funcFilt = document.getElementById('rela-filt-funcao')?.value || '';
+
+  const filtered = grade.filter(g => {
+    if (!g) return false;
+    const srv = alocacoes[g.slotKey] || g.servidor || '';
+    if (srv) return false;
+    if (dataFilt && g.data !== dataFilt) return false;
+    if (funcFilt && g.funcao !== funcFilt) return false;
+    return true;
+  }).sort((a, b) =>
+    (a.data || '').localeCompare(b.data || '') ||
+    (a.horario || '').localeCompare(b.horario || ''));
+
+  set('rela-cnt-total', filtered.length);
+
+  // Agrupar por data+horário para melhor leitura
+  const grupos = {};
+  filtered.forEach(g => {
+    const k = g.data + '|' + g.horario;
+    if (!grupos[k]) grupos[k] = [];
+    grupos[k].push(g);
+  });
+
+  let html = '';
+  Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0])).forEach(([key, vagas]) => {
+    const [data, horario] = key.split('|');
+    html += `<tr style="background:#f8f9fa">
+      <td colspan="6" class="fw-semibold" style="font-size:.83rem">
+        <i class="bi bi-calendar-event me-1"></i>${escHtml(formatDate(data))}
+        &nbsp;<i class="bi bi-clock me-1"></i>${escHtml(horario)}
+        <span class="badge bg-danger ms-2">${vagas.length} vaga(s)</span>
+      </td>
+    </tr>`;
+    vagas.forEach(g => {
+      const fUp   = (g.funcao || '').toUpperCase();
+      const badge = fUp.includes('PROFESSOR') ? 'badge-professor'
+                  : fUp.includes('MONITOR')   ? 'badge-monitor' : 'bg-secondary';
+      html += `<tr>
+        <td>${escHtml(formatDate(g.data))}</td>
+        <td>${escHtml(g.horario)}</td>
+        <td>${escHtml(g.modulo)}</td>
+        <td>${escHtml(g.codAula)}</td>
+        <td>${escHtml(g.turma)}</td>
+        <td><span class="badge ${badge}">${escHtml(g.funcao)}</span></td>
+      </tr>`;
+    });
+  });
+
+  document.getElementById('tbl-rela-body').innerHTML = html ||
+    '<tr><td colspan="6" class="text-center text-success py-3"><i class="bi bi-check-circle me-2"></i>Todas as vagas estão preenchidas!</td></tr>';
+  document.getElementById('rela-footer').textContent = filtered.length + ' vaga(s) em aberto';
+}
+
+function renderRelDisp() {
+  relAbaAtiva = 'rel-disponibilidade';
+  if (!servidores.length) {
+    document.getElementById('tbl-reld-body').innerHTML =
+      '<tr><td colspan="8" class="text-center text-muted py-3">Nenhum servidor carregado</td></tr>';
+    document.getElementById('reld-footer').textContent = '0 servidor(es)';
+    return;
+  }
+
+  const nomeFilt  = (document.getElementById('reld-filt-nome')?.value || '')
+    .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const funcFilt  = (document.getElementById('reld-filt-funcao')?.value || '').toUpperCase();
+  const dataFilt  = document.getElementById('reld-filt-data')?.value || '';
+
+  const filtered = servidores.filter(s => {
+    if (!s) return false;
+    if (funcFilt && !(s.funcao || '').toUpperCase().includes(funcFilt)) return false;
+    if (dataFilt && !isDisponivelNaData(s, dataFilt)) return false;
+    if (nomeFilt) {
+      const nome = (s.nome || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if (!nome.includes(nomeFilt)) return false;
+    }
+    return true;
+  }).sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
+
+  let html = '';
+  filtered.forEach(s => {
+    if (!s) return;
+    const fUp   = (s.funcao || '').toUpperCase();
+    const badge = fUp.includes('PROFESSOR') ? 'badge-professor'
+                : fUp.includes('MONITOR')   ? 'badge-monitor' : 'bg-secondary';
+    html += `<tr>
+      <td class="fw-semibold">${escHtml(s.nome || '')}</td>
+      <td>${escHtml(s.cargo || '')}</td>
+      <td>${escHtml(s.lotacao || '')}</td>
+      <td><span class="badge ${badge}">${escHtml(s.funcao) || '—'}</span></td>
+      <td>${s.dtIni ? escHtml(formatDate(s.dtIni)) : '—'}</td>
+      <td>${s.dtFim ? escHtml(formatDate(s.dtFim)) : 'Total'}</td>
+      <td>${escHtml(s.tel || '')}</td>
+      <td>${escHtml(s.email || '')}</td>
+    </tr>`;
+  });
+  document.getElementById('tbl-reld-body').innerHTML = html ||
+    '<tr><td colspan="8" class="text-center text-muted py-3">Nenhum servidor encontrado</td></tr>';
+  document.getElementById('reld-footer').textContent = filtered.length + ' servidor(es)';
+}
+
+function limparFiltrosRelGrade() {
+  ['relg-filt-servidor','relg-filt-data','relg-filt-funcao','relg-filt-status'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  const turma = document.getElementById('relg-filt-turma');
+  if (turma) turma.value = '';
+  renderRelGrade();
+}
+
+function limparFiltrosRelAbertas() {
+  ['rela-filt-data','rela-filt-funcao'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  renderRelAbertas();
+}
+
+function limparFiltrosRelDisp() {
+  ['reld-filt-nome','reld-filt-data','reld-filt-funcao'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  renderRelDisp();
 }
 
 // ============================================================
@@ -3562,7 +4113,6 @@ function salvarServidor() {
     .then(() => {
       salvarServidoresLocal();
       renderServidores();
-      renderDashboard();
       
       // Fechar modal
       const modalEl = document.getElementById('modalServidor');
@@ -3576,7 +4126,6 @@ function salvarServidor() {
       // Mesmo com erro no Firebase, salva localmente
       salvarServidoresLocal();
       renderServidores();
-      renderDashboard();
       
       const modalEl = document.getElementById('modalServidor');
       const modal = bootstrap.Modal.getInstance(modalEl);
@@ -3619,7 +4168,6 @@ function limparTodosServidores() {
       
       // Atualizar UI
       renderServidores();
-      renderDashboard();
       mostrarToast(`${totalServidores} servidor(es) excluído(s) com sucesso!`);
     });
   } else {
@@ -3627,7 +4175,6 @@ function limparTodosServidores() {
     servidores.length = 0;
     localStorage.removeItem('servidores');
     renderServidores();
-    renderDashboard();
     mostrarToast(`${totalServidores} servidor(es) excluído(s) localmente!`);
   }
 }
@@ -3660,14 +4207,12 @@ function excluirServidor(identificador) {
     .then(() => {
       salvarServidoresLocal();
       renderServidores();
-      renderDashboard();
       mostrarToast('Servidor excluído com sucesso!');
     })
     .catch(error => {
       console.error('Erro ao excluir do Firebase:', error);
       salvarServidoresLocal();
       renderServidores();
-      renderDashboard();
       mostrarToast('Servidor excluído localmente (Firebase offline)');
     });
 }
@@ -3702,6 +4247,9 @@ carregarAlocacoes();
 
 // Carregar impedimentos (Firebase se disponível, senão LocalStorage)
 carregarImpedimentos();
+
+// Verificar sessão de autenticação e exibir login ou app
+verificarSessao();
 
 // Carregar grade do LocalStorage ao iniciar (fallback se Firebase falhar)
 function carregarGradeLocal() {
