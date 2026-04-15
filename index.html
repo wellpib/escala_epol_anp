@@ -174,6 +174,7 @@
         <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-servidores')"><i class="bi bi-people-fill me-1"></i>Servidores</a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-grade')"><i class="bi bi-calendar3-week me-1"></i>Grade da Semana</a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-montar')"><i class="bi bi-pencil-square me-1"></i>Montar Grade</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-impedimentos')"><i class="bi bi-slash-circle me-1"></i>Impedimentos</a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-relatorio')"><i class="bi bi-bar-chart-fill me-1"></i>Relatórios</a></li>
       </ul>
     </div>
@@ -534,6 +535,42 @@
     </div>
   </div>
 
+  <!-- Modal: Impedimento -->
+  <div class="modal fade" id="modalImpedimento" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header" style="background:var(--pf-azul);color:#fff">
+          <h5 class="modal-title" id="modalImpedimentoTitulo">Novo Impedimento</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="formImpedimento">
+            <input type="hidden" id="imp-id" />
+            <div class="mb-3">
+              <label class="form-label">Servidor <span class="text-danger">*</span></label>
+              <select class="form-select" id="imp-servidor" required>
+                <option value="">Selecione o servidor...</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Data do Impedimento <span class="text-danger">*</span></label>
+              <input type="date" class="form-control" id="imp-data" required />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Motivo <span class="text-muted">(opcional)</span></label>
+              <input type="text" class="form-control" id="imp-motivo"
+                     placeholder="Ex: Férias, Licença médica, Curso externo..." />
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" onclick="salvarImpedimento()">Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ===================== TAB: GRADE ===================== -->
   <div id="tab-grade" style="display:none">
     <h5 class="section-title">Grade da Semana</h5>
@@ -804,6 +841,97 @@
     </div>
   </div>
 
+  <!-- ===================== TAB: IMPEDIMENTOS ===================== -->
+  <div id="tab-impedimentos" style="display:none">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="section-title mb-0">Impedimentos de Servidores</h5>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm" style="background:var(--pf-azul);color:#fff" onclick="abrirModalImpedimento()">
+          <i class="bi bi-plus-circle me-1"></i>Novo Impedimento
+        </button>
+        <button class="btn btn-sm btn-outline-danger" onclick="excluirTodosImpedimentos()">
+          <i class="bi bi-trash me-1"></i>Limpar Tudo
+        </button>
+      </div>
+    </div>
+
+    <div class="alert alert-info py-2 mb-3" style="font-size:.88rem">
+      <i class="bi bi-info-circle me-2"></i>
+      Impedimentos bloqueiam a seleção do servidor na aba <strong>Montar Grade</strong> nas datas cadastradas, mesmo que ele esteja dentro do período de disponibilidade.
+    </div>
+
+    <!-- Filtros -->
+    <div class="card p-3 mb-3 no-print shadow-sm">
+      <div class="row g-2 align-items-end">
+        <div class="col-12 col-sm-6 col-md-4">
+          <label class="form-label small fw-semibold mb-1">Buscar Servidor</label>
+          <input type="text" class="form-control form-control-sm" id="imp-filt-nome"
+                 placeholder="Digite o nome..." oninput="renderImpedimentos()" />
+        </div>
+        <div class="col-12 col-sm-6 col-md-3">
+          <label class="form-label small fw-semibold mb-1">Data</label>
+          <input type="date" class="form-control form-control-sm" id="imp-filt-data"
+                 onchange="renderImpedimentos()" />
+        </div>
+        <div class="col-12 col-md-auto d-flex align-items-end">
+          <button class="btn btn-sm btn-link text-secondary p-0" onclick="limparFiltrosImpedimentos()">
+            <i class="bi bi-x-circle me-1"></i>Limpar filtros
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabela de Impedimentos -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover table-sm mb-0" id="tbl-impedimentos">
+            <thead style="background:var(--pf-azul);color:#fff">
+              <tr>
+                <th style="width:110px">Data</th>
+                <th>Servidor</th>
+                <th style="width:130px">Função</th>
+                <th>Motivo</th>
+                <th class="no-print" style="width:60px">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tbl-imp-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card-footer text-muted small" id="imp-count-footer">0 impedimento(s)</div>
+    </div>
+
+    <!-- Servidores cadastrados (referência) -->
+    <div class="card shadow-sm">
+      <div class="card-header d-flex justify-content-between align-items-center"
+           style="cursor:pointer;background:#f8f9fa" onclick="toggleServRef()">
+        <span class="fw-semibold">
+          <i class="bi bi-people-fill me-2" style="color:var(--pf-azul)"></i>Servidores Cadastrados — referência de datas e impedimentos
+        </span>
+        <i class="bi bi-chevron-down" id="serv-ref-icon"></i>
+      </div>
+      <div id="serv-ref-body" style="display:none">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Nome</th>
+                  <th style="width:130px">Função</th>
+                  <th>Período de Disponibilidade</th>
+                  <th>Impedimentos Cadastrados</th>
+                  <th class="no-print" style="width:60px">Ação</th>
+                </tr>
+              </thead>
+              <tbody id="tbl-serv-ref-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast salvo -->
   <div class="save-toast" id="save-toast"><i class="bi bi-check-circle-fill me-1"></i>Salvo</div>
 
@@ -956,15 +1084,17 @@
 let servidores = [];   // [{nome, cargo, lotacao, funcao, dtIni, dtFim, origem, tel, email}]
 let grade = [];        // [{data, horario, modulo, codAula, funcao, servidor, turma}]
 let semanaLabel = '';
+let impedimentos = []; // [{id, servidorNome, servidorFuncao, data, motivo}]
 
 // ============================================================
 // NAVEGAÇÃO
 // ============================================================
 function showTab(id) {
-  ['tab-upload','tab-dashboard','tab-servidores','tab-grade','tab-montar','tab-relatorio']
+  ['tab-upload','tab-dashboard','tab-servidores','tab-grade','tab-montar','tab-relatorio','tab-impedimentos']
     .forEach(t => document.getElementById(t).style.display = 'none');
   document.getElementById(id).style.display = '';
   if (id === 'tab-montar') renderMontarGrade();
+  if (id === 'tab-impedimentos') renderImpedimentos();
 }
 
 function showRel(id) {
@@ -1876,6 +2006,8 @@ function formatDate(iso) {
 }
 
 function isDisponivelNaData(s, dt) {
+  // Verificar impedimentos cadastrados para este servidor nesta data
+  if (impedimentos.some(imp => imp.servidorNome === s.nome && imp.data === dt)) return false;
   // Sem datas = disponibilidade total (regra explícita do usuário)
   if (!s.dtIni && !s.dtFim) return true;
   if (s.dtIni && dt < s.dtIni) return false;
@@ -2634,6 +2766,255 @@ function ignorarSelecionados(grupo) {
 }
 
 // ============================================================
+// IMPEDIMENTOS
+// ============================================================
+const IMPEDIMENTOS_KEY = 'epol-impedimentos';
+
+function carregarImpedimentos() {
+  if (firebaseEnabled && db) {
+    carregarImpedimentosFirebase();
+  } else {
+    carregarImpedimentosLocal();
+  }
+}
+
+function salvarImpedimentos() {
+  localStorage.setItem(IMPEDIMENTOS_KEY, JSON.stringify(impedimentos));
+  if (firebaseEnabled && db) {
+    salvarImpedimentosFirebase();
+  }
+}
+
+async function salvarImpedimentosFirebase() {
+  if (!db) return;
+  try {
+    await db.collection('config').doc('impedimentos').set({ impedimentos: impedimentos });
+    console.log('Impedimentos salvos no Firebase:', impedimentos.length);
+  } catch (error) {
+    console.error('Erro ao salvar impedimentos no Firebase:', error);
+  }
+}
+
+async function carregarImpedimentosFirebase() {
+  if (!db) { carregarImpedimentosLocal(); return; }
+  try {
+    const doc = await db.collection('config').doc('impedimentos').get();
+    if (doc.exists) {
+      const data = doc.data();
+      impedimentos = data.impedimentos || [];
+      localStorage.setItem(IMPEDIMENTOS_KEY, JSON.stringify(impedimentos));
+      console.log('Impedimentos carregados do Firebase:', impedimentos.length);
+    } else {
+      carregarImpedimentosLocal();
+    }
+  } catch (error) {
+    console.error('Erro ao carregar impedimentos do Firebase:', error);
+    carregarImpedimentosLocal();
+  }
+}
+
+function carregarImpedimentosLocal() {
+  try {
+    impedimentos = JSON.parse(localStorage.getItem(IMPEDIMENTOS_KEY) || '[]');
+    console.log('Impedimentos carregados do LocalStorage:', impedimentos.length);
+  } catch {
+    impedimentos = [];
+  }
+}
+
+function abrirModalImpedimento(servidorNomePre) {
+  document.getElementById('modalImpedimentoTitulo').textContent = 'Novo Impedimento';
+  document.getElementById('formImpedimento').reset();
+  document.getElementById('imp-id').value = '';
+
+  // Popular select de servidores
+  const sel = document.getElementById('imp-servidor');
+  sel.innerHTML = '<option value="">Selecione o servidor...</option>';
+  const servOrdenados = [...servidores].sort((a, b) =>
+    (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
+  servOrdenados.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.nome;
+    opt.textContent = s.nome + (s.funcao ? ' (' + s.funcao + ')' : '');
+    if (servidorNomePre && s.nome === servidorNomePre) opt.selected = true;
+    sel.appendChild(opt);
+  });
+
+  const modal = new bootstrap.Modal(document.getElementById('modalImpedimento'));
+  modal.show();
+}
+
+function salvarImpedimento() {
+  const form = document.getElementById('formImpedimento');
+  if (!form.checkValidity()) { form.reportValidity(); return; }
+
+  const idVal = document.getElementById('imp-id').value;
+  const servidorNome = document.getElementById('imp-servidor').value;
+  const servidor = servidores.find(s => s.nome === servidorNome);
+
+  const impedimento = {
+    id: idVal || 'imp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+    servidorNome: servidorNome,
+    servidorFuncao: servidor ? (servidor.funcao || '') : '',
+    data: document.getElementById('imp-data').value,
+    motivo: document.getElementById('imp-motivo').value.trim()
+  };
+
+  if (idVal) {
+    const idx = impedimentos.findIndex(i => i.id === idVal);
+    if (idx >= 0) impedimentos[idx] = impedimento;
+  } else {
+    // Evitar duplicata (mesmo servidor + mesma data)
+    const existe = impedimentos.find(i =>
+      i.servidorNome === impedimento.servidorNome && i.data === impedimento.data);
+    if (existe) {
+      alert('Já existe um impedimento para este servidor nesta data.');
+      return;
+    }
+    impedimentos.push(impedimento);
+  }
+
+  salvarImpedimentos();
+  renderImpedimentos();
+
+  const modalEl = document.getElementById('modalImpedimento');
+  const modal = bootstrap.Modal.getInstance(modalEl);
+  if (modal) modal.hide();
+
+  mostrarToast('Impedimento salvo!');
+}
+
+function excluirImpedimento(id) {
+  if (!confirm('Excluir este impedimento?')) return;
+  impedimentos = impedimentos.filter(i => i.id !== id);
+  salvarImpedimentos();
+  renderImpedimentos();
+  mostrarToast('Impedimento excluído!');
+}
+
+function excluirTodosImpedimentos() {
+  if (!impedimentos.length) { alert('Não há impedimentos cadastrados.'); return; }
+  if (!confirm('Excluir todos os ' + impedimentos.length + ' impedimento(s)?')) return;
+  impedimentos = [];
+  salvarImpedimentos();
+  renderImpedimentos();
+  mostrarToast('Todos os impedimentos foram excluídos!');
+}
+
+function renderImpedimentos() {
+  const nomeFilt = (document.getElementById('imp-filt-nome')?.value || '')
+    .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const dataFilt = document.getElementById('imp-filt-data')?.value || '';
+
+  const filtered = impedimentos.filter(i => {
+    if (dataFilt && i.data !== dataFilt) return false;
+    if (nomeFilt) {
+      const nome = (i.servidorNome || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if (!nome.includes(nomeFilt)) return false;
+    }
+    return true;
+  }).sort((a, b) =>
+    (a.data || '').localeCompare(b.data || '') ||
+    (a.servidorNome || '').localeCompare(b.servidorNome || '', 'pt-BR'));
+
+  let html = '';
+  filtered.forEach(i => {
+    const funcaoUpper = (i.servidorFuncao || '').toUpperCase();
+    const badge = funcaoUpper.includes('PROFESSOR') ? 'badge-professor'
+                : funcaoUpper.includes('MONITOR') ? 'badge-monitor' : 'bg-secondary';
+    html += `<tr>
+      <td><strong>${escHtml(formatDate(i.data))}</strong></td>
+      <td class="fw-semibold">${escHtml(i.servidorNome)}</td>
+      <td>${i.servidorFuncao ? '<span class="badge ' + badge + '">' + escHtml(i.servidorFuncao) + '</span>' : '—'}</td>
+      <td>${escHtml(i.motivo) || '<span class="text-muted">—</span>'}</td>
+      <td class="no-print">
+        <button class="btn btn-sm btn-outline-danger btn-acao" onclick="excluirImpedimento('${escHtml(i.id)}')" title="Excluir">
+          <i class="bi bi-trash"></i>
+        </button>
+      </td>
+    </tr>`;
+  });
+
+  const tbody = document.getElementById('tbl-imp-body');
+  if (tbody) tbody.innerHTML = html ||
+    '<tr><td colspan="5" class="text-center text-muted py-3">Nenhum impedimento cadastrado</td></tr>';
+
+  const footer = document.getElementById('imp-count-footer');
+  if (footer) footer.textContent =
+    filtered.length + ' impedimento(s) exibido(s) de ' + impedimentos.length + ' total';
+
+  // Atualizar painel de referência de servidores se estiver aberto
+  const refBody = document.getElementById('serv-ref-body');
+  if (refBody && refBody.style.display !== 'none') renderServRef();
+}
+
+function renderServRef() {
+  const tbody = document.getElementById('tbl-serv-ref-body');
+  if (!tbody) return;
+
+  if (!servidores.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">Nenhum servidor carregado</td></tr>';
+    return;
+  }
+
+  const servOrdenados = [...servidores].sort((a, b) =>
+    (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
+
+  let html = '';
+  servOrdenados.forEach(s => {
+    const funcaoUpper = (s.funcao || '').toUpperCase();
+    const badge = funcaoUpper.includes('PROFESSOR') ? 'badge-professor'
+                : funcaoUpper.includes('MONITOR') ? 'badge-monitor' : 'bg-secondary';
+    const periodo = s.dtIni || s.dtFim
+      ? escHtml(formatDate(s.dtIni) || '?') + ' → ' + escHtml(formatDate(s.dtFim) || '?')
+      : '<span class="text-success small">Disponibilidade total</span>';
+    const imps = impedimentos.filter(i => i.servidorNome === s.nome);
+    const impsHtml = imps.length
+      ? imps.sort((a, b) => a.data.localeCompare(b.data)).map(i =>
+          '<span class="badge bg-danger me-1" title="' + escHtml(i.motivo || '') + '">' +
+          escHtml(formatDate(i.data)) + (i.motivo ? ': ' + escHtml(i.motivo) : '') + '</span>'
+        ).join('')
+      : '<span class="text-muted small">Nenhum</span>';
+
+    html += `<tr>
+      <td class="fw-semibold">${escHtml(s.nome)}</td>
+      <td><span class="badge ${badge}">${escHtml(s.funcao) || '—'}</span></td>
+      <td style="font-size:.82rem">${periodo}</td>
+      <td style="font-size:.82rem">${impsHtml}</td>
+      <td class="no-print">
+        <button class="btn btn-sm btn-outline-primary btn-acao"
+                onclick="abrirModalImpedimento('${escHtml(s.nome)}')"
+                title="Adicionar impedimento">
+          <i class="bi bi-plus-circle"></i>
+        </button>
+      </td>
+    </tr>`;
+  });
+  tbody.innerHTML = html;
+}
+
+function toggleServRef() {
+  const body = document.getElementById('serv-ref-body');
+  const icon = document.getElementById('serv-ref-icon');
+  if (body.style.display === 'none') {
+    body.style.display = '';
+    icon.className = 'bi bi-chevron-up';
+    renderServRef();
+  } else {
+    body.style.display = 'none';
+    icon.className = 'bi bi-chevron-down';
+  }
+}
+
+function limparFiltrosImpedimentos() {
+  const nome = document.getElementById('imp-filt-nome');
+  const data = document.getElementById('imp-filt-data');
+  if (nome) nome.value = '';
+  if (data) data.value = '';
+  renderImpedimentos();
+}
+
+// ============================================================
 // FIREBASE CONFIGURATION & DATABASE
 // ============================================================
 
@@ -2712,8 +3093,9 @@ function carregarServidoresFirebase() {
       carregarServidoresLocal();
     }
     
-    // Carregar também a última grade salva
+    // Carregar também a última grade salva e os impedimentos
     carregarUltimaGradeFirebase();
+    carregarImpedimentosFirebase();
     
   }).catch(error => {
     console.error('Erro ao carregar do Firebase:', error);
@@ -2806,19 +3188,26 @@ async function salvarGradeNoFirebase() {
     return;
   }
   
-  if (!grade.length || !semanaLabel) {
-    console.warn('Grade vazia ou sem identificador de semana.');
-    return;
-  }
-  
   try {
     addStatus('🔄 Salvando grade no Firebase...', 'info');
     
     // Criar documento da grade com ID baseado no nome da semana
-    const gradeId = semanaLabel.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    // Se não houver semanaLabel, usar um ID padrão baseado em data
+    const labelAtual = semanaLabel || `Grade-${new Date().toISOString().slice(0, 10)}`;
+    const gradeId = labelAtual.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    
+    // Se a grade está vazia, deletar o documento do Firebase
+    if (!grade || grade.length === 0) {
+      await db.collection('grades').doc(gradeId).delete();
+      salvarGradeLocal();
+      const msg = '✅ Grade removida do Firebase';
+      addStatus(msg, 'success');
+      console.log(`Grade "${labelAtual}" removida do Firebase`);
+      return;
+    }
     
     const gradeData = {
-      semana: semanaLabel,
+      semana: labelAtual,
       dataImportacao: new Date().toISOString(),
       totalRegistros: grade.length,
       linhas: grade.map(g => ({
@@ -2837,6 +3226,11 @@ async function salvarGradeNoFirebase() {
     // Salvar ou atualizar a grade no Firebase
     await db.collection('grades').doc(gradeId).set(gradeData);
     
+    // Atualizar semanaLabel se estava vazio
+    if (!semanaLabel) {
+      semanaLabel = labelAtual;
+    }
+    
     // Salvar também no LocalStorage
     salvarGradeLocal();
     
@@ -2844,7 +3238,7 @@ async function salvarGradeNoFirebase() {
     addStatus(msg, 'success');
     mostrarToast(msg);
     
-    console.log(`Grade "${semanaLabel}" salva no Firebase com ${grade.length} registros`);
+    console.log(`Grade "${labelAtual}" salva no Firebase com ${grade.length} registros`);
     
   } catch (error) {
     console.error('Erro ao salvar grade no Firebase:', error);
@@ -3305,6 +3699,9 @@ initFirebase();
 
 // Carregar alocações da aba "Montar Grade" do LocalStorage
 carregarAlocacoes();
+
+// Carregar impedimentos (Firebase se disponível, senão LocalStorage)
+carregarImpedimentos();
 
 // Carregar grade do LocalStorage ao iniciar (fallback se Firebase falhar)
 function carregarGradeLocal() {
