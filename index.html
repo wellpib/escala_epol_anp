@@ -165,6 +165,18 @@
       .card { box-shadow: none !important; }
     }
 
+    /* Relatórios — mobile */
+    #rel-tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    #rel-tabs .nav-link { white-space: nowrap; padding: .45rem .75rem; }
+    @media (max-width: 575.98px) {
+      #rel-tabs .nav-link { font-size: .78rem; padding: .4rem .5rem; }
+      #tab-relatorio .table td,
+      #tab-relatorio .table th { font-size: .76rem; padding: .3rem .35rem; }
+      .rel-hide-xs { display: none !important; }
+      #tab-relatorio .card.p-3 { padding: .75rem !important; }
+      #tab-relatorio .section-title { font-size: 1rem; }
+    }
+
     .section-title {
       border-left: 4px solid var(--pf-dourado);
       padding-left: .75rem;
@@ -990,7 +1002,18 @@
   <div id="tab-relatorio" style="display:none">
     <h5 class="section-title">Relatórios</h5>
 
-    <ul class="nav nav-tabs mb-3" id="rel-tabs">
+    <!-- Loading overlay -->
+    <div id="rel-loading" style="display:none">
+      <div class="text-center py-5">
+        <div class="spinner-border" style="width:2.5rem;height:2.5rem;color:var(--pf-azul)" role="status">
+          <span class="visually-hidden">Carregando...</span>
+        </div>
+        <div class="mt-3 text-muted fw-semibold">Carregando dados...</div>
+      </div>
+    </div>
+
+    <div id="rel-body">
+    <ul class="nav nav-tabs nav-fill mb-3" id="rel-tabs">
       <li class="nav-item">
         <a class="nav-link active" href="#" onclick="showRel('rel-meus-dias');return false">
           <i class="bi bi-calendar-check me-1"></i>Grade
@@ -1013,14 +1036,15 @@
       <div class="card p-3 mb-3 no-print shadow-sm">
         <div class="row g-2 align-items-end">
           <div class="col-12 col-sm-6 col-md-3">
-            <label class="form-label small fw-semibold mb-1">Buscar Nome</label>
-            <input type="text" class="form-control form-control-sm" id="reld-filt-nome"
-                   placeholder="Digite o nome..." oninput="renderRelDisp()" />
+            <label class="form-label small fw-semibold mb-1">Servidor</label>
+            <select class="form-select form-select-sm" id="reld-filt-nome" onchange="renderRelDisp()">
+              <option value="">— Selecione —</option>
+            </select>
           </div>
           <div class="col-12 col-sm-6 col-md-2">
             <label class="form-label small fw-semibold mb-1">Função</label>
             <select class="form-select form-select-sm" id="reld-filt-funcao" onchange="renderRelDisp()">
-              <option value="">Todas</option>
+              <option value="">— Selecione —</option>
               <option value="PROFESSOR">PROFESSOR</option>
               <option value="MONITOR">MONITOR</option>
             </select>
@@ -1029,7 +1053,7 @@
             <label class="form-label small fw-semibold mb-1">Disponível na data</label>
             <input type="date" class="form-control form-control-sm" id="reld-filt-data" onchange="renderRelDisp()" />
           </div>
-          <div class="col-12 col-md-auto d-flex align-items-end gap-2">
+          <div class="col-12 col-md-auto d-flex align-items-end justify-content-end gap-2">
             <button class="btn btn-sm btn-outline-secondary" onclick="exportarCSV('tbl-reld','disponibilidade')">
               <i class="bi bi-download me-1"></i>CSV
             </button>
@@ -1046,8 +1070,14 @@
             <table class="table table-hover table-sm mb-0" id="tbl-reld">
               <thead style="background:var(--pf-azul);color:#fff">
                 <tr>
-                  <th>Nome</th><th>Cargo</th><th>Lotação</th><th>Função</th>
-                  <th>Data Início</th><th>Data Fim</th><th>Telefone</th><th>E-mail</th>
+                  <th>Nome</th>
+                  <th class="rel-hide-xs">Cargo</th>
+                  <th class="rel-hide-xs">Lotação</th>
+                  <th>Função</th>
+                  <th>Dt. Início</th>
+                  <th>Dt. Fim</th>
+                  <th class="rel-hide-xs">Telefone</th>
+                  <th class="rel-hide-xs">E-mail</th>
                 </tr>
               </thead>
               <tbody id="tbl-reld-body"></tbody>
@@ -1065,7 +1095,7 @@
           <div class="col-12 col-sm-6 col-md-4">
             <label class="form-label small fw-semibold mb-1">Servidor</label>
             <select class="form-select form-select-sm" id="meusdias-nome" onchange="renderRelMeusDias()">
-              <option value="">Todos os servidores</option>
+              <option value="">— Selecione —</option>
             </select>
           </div>
           <div class="col-12 col-sm-6 col-md-3">
@@ -1073,7 +1103,7 @@
             <input type="date" class="form-control form-control-sm" id="meusdias-data"
                    onchange="renderRelMeusDias()" />
           </div>
-          <div class="col-12 col-md-auto d-flex align-items-end">
+          <div class="col-12 col-md-auto d-flex align-items-end justify-content-end">
             <button class="btn btn-sm btn-link text-secondary p-0"
                     onclick="document.getElementById('meusdias-nome').value='';document.getElementById('meusdias-data').value='';renderRelMeusDias();return false">
               <i class="bi bi-x-circle me-1"></i>Limpar
@@ -1091,19 +1121,20 @@
 
     <!-- ── Sub-tab: Impedimentos (Relatórios) ── -->
     <div id="rel-impedimentos" style="display:none">
-      <div class="d-flex justify-content-between align-items-center mb-3">
+      <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3">
         <span class="text-muted small">
           <i class="bi bi-info-circle me-1"></i>
-          Impedimentos bloqueiam a seleção do servidor na aba <strong>Montar Grade</strong> nas datas cadastradas.
+          <span class="d-none d-sm-inline">Impedimentos bloqueiam a seleção do servidor na aba <strong>Montar Grade</strong> nas datas cadastradas.</span>
+          <span class="d-inline d-sm-none">Bloqueiam a seleção em <strong>Montar Grade</strong>.</span>
         </span>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 flex-shrink-0">
           <button class="btn btn-sm" style="background:var(--pf-azul);color:#fff"
                   onclick="abrirModalImpedimento()">
-            <i class="bi bi-plus-circle me-1"></i>Novo Impedimento
+            <i class="bi bi-plus-circle me-1"></i><span class="d-none d-sm-inline">Novo </span>Impedimento
           </button>
           <button class="btn btn-sm btn-outline-danger"
                   onclick="excluirTodosImpedimentos()">
-            <i class="bi bi-trash me-1"></i>Limpar Tudo
+            <i class="bi bi-trash me-1"></i><span class="d-none d-sm-inline">Limpar Tudo</span>
           </button>
         </div>
       </div>
@@ -1111,16 +1142,17 @@
       <div class="card p-3 mb-3 no-print shadow-sm">
         <div class="row g-2 align-items-end">
           <div class="col-12 col-sm-6 col-md-4">
-            <label class="form-label small fw-semibold mb-1">Buscar Servidor</label>
-            <input type="text" class="form-control form-control-sm" id="rel-imp-filt-nome"
-                   placeholder="Digite o nome..." oninput="renderRelImpedimentos()" />
+            <label class="form-label small fw-semibold mb-1">Servidor</label>
+            <select class="form-select form-select-sm" id="rel-imp-filt-nome" onchange="renderRelImpedimentos()">
+              <option value="">— Selecione —</option>
+            </select>
           </div>
           <div class="col-12 col-sm-6 col-md-3">
             <label class="form-label small fw-semibold mb-1">Data</label>
             <input type="date" class="form-control form-control-sm" id="rel-imp-filt-data"
                    onchange="renderRelImpedimentos()" />
           </div>
-          <div class="col-12 col-md-auto d-flex align-items-end">
+          <div class="col-12 col-md-auto d-flex align-items-end justify-content-end">
             <button class="btn btn-sm btn-link text-secondary p-0"
                     onclick="limparFiltrosRelImpedimentos()">
               <i class="bi bi-x-circle me-1"></i>Limpar filtros
@@ -1135,11 +1167,11 @@
             <table class="table table-hover table-sm mb-0" id="tbl-rel-imp">
               <thead style="background:var(--pf-azul);color:#fff">
                 <tr>
-                  <th style="width:110px">Data</th>
+                  <th style="width:100px">Data</th>
                   <th>Servidor</th>
-                  <th style="width:130px">Função</th>
+                  <th class="rel-hide-xs" style="width:120px">Função</th>
                   <th>Motivo</th>
-                  <th class="no-print" style="width:60px">Ações</th>
+                  <th class="no-print" style="width:50px">Ações</th>
                 </tr>
               </thead>
               <tbody id="tbl-rel-imp-body"></tbody>
@@ -1150,6 +1182,7 @@
       </div>
     </div>
 
+    </div><!-- /rel-body -->
   </div><!-- /tab-relatorio -->
 
 </div><!-- /container -->
@@ -1319,7 +1352,7 @@ function showTab(id) {
       renderMontarGrade();
     }
   }
-  if (id === 'tab-relatorio') { _popularSelectGrade(); renderRelatorio(); }
+  if (id === 'tab-relatorio') { _popularSelectGrade(); _relAtualizarEstado(); }
   if (id === 'tab-impedimentos') renderImpedimentos();
 }
 
@@ -3177,19 +3210,17 @@ function renderRelDisp() {
     return;
   }
 
-  const nomeFilt  = (document.getElementById('reld-filt-nome')?.value || '')
-    .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  const funcFilt  = (document.getElementById('reld-filt-funcao')?.value || '').toUpperCase();
-  const dataFilt  = document.getElementById('reld-filt-data')?.value || '';
+  _popularSelectServidor('reld-filt-nome');
+
+  const nomeFilt = document.getElementById('reld-filt-nome')?.value || '';
+  const funcFilt = (document.getElementById('reld-filt-funcao')?.value || '').toUpperCase();
+  const dataFilt = document.getElementById('reld-filt-data')?.value || '';
 
   const filtered = servidores.filter(s => {
     if (!s) return false;
+    if (nomeFilt && s.nome !== nomeFilt) return false;
     if (funcFilt && !(s.funcao || '').toUpperCase().includes(funcFilt)) return false;
     if (dataFilt && !isDisponivelNaData(s, dataFilt)) return false;
-    if (nomeFilt) {
-      const nome = (s.nome || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      if (!nome.includes(nomeFilt)) return false;
-    }
     return true;
   }).sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
 
@@ -3201,13 +3232,13 @@ function renderRelDisp() {
                 : fUp.includes('MONITOR')   ? 'badge-monitor' : 'bg-secondary';
     html += `<tr>
       <td class="fw-semibold">${escHtml(s.nome || '')}</td>
-      <td>${escHtml(s.cargo || '')}</td>
-      <td>${escHtml(s.lotacao || '')}</td>
+      <td class="rel-hide-xs">${escHtml(s.cargo || '')}</td>
+      <td class="rel-hide-xs">${escHtml(s.lotacao || '')}</td>
       <td><span class="badge ${badge}">${escHtml(s.funcao) || '—'}</span></td>
       <td>${s.dtIni ? escHtml(formatDate(s.dtIni)) : '—'}</td>
       <td>${s.dtFim ? escHtml(formatDate(s.dtFim)) : 'Total'}</td>
-      <td>${escHtml(s.tel || '')}</td>
-      <td>${escHtml(s.email || '')}</td>
+      <td class="rel-hide-xs">${escHtml(s.tel || '')}</td>
+      <td class="rel-hide-xs">${escHtml(s.email || '')}</td>
     </tr>`;
   });
   document.getElementById('tbl-reld-body').innerHTML = html ||
@@ -3241,8 +3272,39 @@ function limparFiltrosRelDisp() {
   renderRelDisp();
 }
 
-function _popularSelectGrade() {
-  const sel = document.getElementById('meusdias-nome');
+// ============================================================
+// LOADING RELATÓRIOS
+// ============================================================
+let _relLoadingCount = 0;
+
+function _relIniciarLoading() {
+  _relLoadingCount++;
+  _relAtualizarEstado();
+}
+
+function _relFinalizarLoading() {
+  _relLoadingCount = Math.max(0, _relLoadingCount - 1);
+  _relAtualizarEstado();
+  if (_relLoadingCount === 0) {
+    const tab = document.getElementById('tab-relatorio');
+    if (tab && tab.style.display !== 'none') {
+      _popularSelectGrade();
+      renderRelatorio();
+    }
+  }
+}
+
+function _relAtualizarEstado() {
+  const loading = document.getElementById('rel-loading');
+  const body    = document.getElementById('rel-body');
+  if (!loading || !body) return;
+  const carregando = _relLoadingCount > 0;
+  loading.style.display = carregando ? '' : 'none';
+  body.style.display    = carregando ? 'none' : '';
+}
+
+function _popularSelectServidor(id, labelTodos) {
+  const sel = document.getElementById(id);
   if (!sel) return;
   const atual = sel.value;
   const opts = [...servidores]
@@ -3250,8 +3312,14 @@ function _popularSelectGrade() {
     .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'))
     .map(s => `<option value="${escHtml(s.nome)}">${escHtml(s.nome)}</option>`)
     .join('');
-  sel.innerHTML = `<option value="">Todos os servidores</option>${opts}`;
+  sel.innerHTML = `<option value="">${labelTodos || '— Selecione —'}</option>${opts}`;
   if (atual) sel.value = atual;
+}
+
+function _popularSelectGrade() {
+  _popularSelectServidor('meusdias-nome');
+  _popularSelectServidor('reld-filt-nome');
+  _popularSelectServidor('rel-imp-filt-nome');
 }
 
 function renderRelMeusDias() {
@@ -3285,77 +3353,43 @@ function renderRelMeusDias() {
     return true;
   }).sort((a, b) => a.data < b.data ? -1 : a.data > b.data ? 1 : (a.horario || '').localeCompare(b.horario || ''));
 
-  const impsPessoa = impedimentos.filter(i => {
-    if (nome && !(i.servidorNome || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(nomeNorm)) return false;
-    if (dataFilt && i.data !== dataFilt) return false;
-    return true;
-  }).sort((a, b) => (a.data || '').localeCompare(b.data || ''));
-
-  if (!diasAlocados.length && !impsPessoa.length) {
+  if (!diasAlocados.length) {
     content.innerHTML = `
       <div class="text-center text-muted py-4">
         <i class="bi bi-calendar-x" style="font-size:2rem;opacity:.35"></i>
-        <div class="mt-2">Nenhum dado encontrado${nome ? ` para <strong>${escHtml(nome)}</strong>` : ''}${dataFilt ? ` em <strong>${escHtml(formatDate(dataFilt))}</strong>` : ''}</div>
+        <div class="mt-2">Nenhuma alocação encontrada${nome ? ` para <strong>${escHtml(nome)}</strong>` : ''}${dataFilt ? ` em <strong>${escHtml(formatDate(dataFilt))}</strong>` : ''}</div>
       </div>`;
     return;
   }
 
-  let html = '';
-
-  if (diasAlocados.length) {
-    const titulo = nome ? `Grade — ${escHtml(nome)}` : 'Grade';
-    html += `
-      <div class="card shadow-sm mb-4">
-        <div class="card-header fw-semibold" style="background:var(--pf-azul);color:#fff">
-          <i class="bi bi-calendar-check me-2"></i>${titulo} (${diasAlocados.length})
-        </div>
-        <div class="card-body p-0">
-          <div class="table-responsive">
-            <table class="table table-hover table-sm mb-0">
-              <thead class="table-light">
-                <tr><th>Data</th><th>Dia</th><th>Horário</th><th>Módulo</th><th>Turma</th><th>Função</th>${nome ? '' : '<th>Servidor</th>'}</tr>
-              </thead><tbody>`;
-    diasAlocados.forEach(g => {
-      const dt = g.data ? new Date(g.data + 'T00:00:00') : null;
-      const srv = alocacoes[g.slotKey] || g.servidor || '';
-      html += `<tr>
-        <td>${escHtml(formatDate(g.data))}</td>
-        <td>${dt ? DIAS_PT[dt.getDay()] : ''}</td>
-        <td>${escHtml(g.horario || '')}</td>
-        <td>${escHtml(g.modulo || '')}</td>
-        <td>${escHtml(g.turma || '')}</td>
-        <td>${escHtml(g.funcao || '')}</td>
-        ${nome ? '' : `<td class="fw-semibold">${escHtml(srv)}</td>`}
-      </tr>`;
-    });
-    html += `</tbody></table></div></div>
-        <div class="card-footer text-muted small">${diasAlocados.length} alocação(ões)</div>
-      </div>`;
-  }
-
-  if (impsPessoa.length) {
-    html += `
-      <div class="card shadow-sm">
-        <div class="card-header fw-semibold" style="background:#dc3545;color:#fff">
-          <i class="bi bi-slash-circle me-2"></i>Impedimentos (${impsPessoa.length})
-        </div>
-        <div class="card-body p-0">
-          <div class="table-responsive">
-            <table class="table table-hover table-sm mb-0">
-              <thead class="table-light">
-                <tr><th>Data</th>${nome ? '' : '<th>Servidor</th>'}<th>Função</th><th>Motivo</th></tr>
-              </thead><tbody>`;
-    impsPessoa.forEach(i => {
-      html += `<tr>
-        <td>${escHtml(formatDate(i.data))}</td>
-        ${nome ? '' : `<td>${escHtml(i.servidorNome || '')}</td>`}
-        <td>${escHtml(i.servidorFuncao || '')}</td>
-        <td>${escHtml(i.motivo || '')}</td>
-      </tr>`;
-    });
-    html += `</tbody></table></div></div>
-      </div>`;
-  }
+  const titulo = nome ? `Grade — ${escHtml(nome)}` : 'Grade';
+  let html = `
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold" style="background:var(--pf-azul);color:#fff">
+        <i class="bi bi-calendar-check me-2"></i>${titulo} (${diasAlocados.length})
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover table-sm mb-0">
+            <thead class="table-light">
+              <tr><th>Data</th><th class="rel-hide-xs">Dia</th><th>Horário</th><th class="rel-hide-xs">Módulo</th><th class="rel-hide-xs">Turma</th><th>Função</th>${nome ? '' : '<th>Servidor</th>'}</tr>
+            </thead><tbody>`;
+  diasAlocados.forEach(g => {
+    const dt  = g.data ? new Date(g.data + 'T00:00:00') : null;
+    const srv = alocacoes[g.slotKey] || g.servidor || '';
+    html += `<tr>
+      <td>${escHtml(formatDate(g.data))}</td>
+      <td class="rel-hide-xs">${dt ? DIAS_PT[dt.getDay()] : ''}</td>
+      <td>${escHtml(g.horario || '')}</td>
+      <td class="rel-hide-xs">${escHtml(g.modulo || '')}</td>
+      <td class="rel-hide-xs">${escHtml(g.turma || '')}</td>
+      <td>${escHtml(g.funcao || '')}</td>
+      ${nome ? '' : `<td class="fw-semibold">${escHtml(srv)}</td>`}
+    </tr>`;
+  });
+  html += `</tbody></table></div></div>
+      <div class="card-footer text-muted small">${diasAlocados.length} alocação(ões)</div>
+    </div>`;
 
   content.innerHTML = html;
 }
@@ -3363,16 +3397,14 @@ function renderRelMeusDias() {
 function renderRelImpedimentos() {
   relAbaAtiva = 'rel-impedimentos';
 
-  const nomeFilt = (document.getElementById('rel-imp-filt-nome')?.value || '')
-    .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  _popularSelectServidor('rel-imp-filt-nome');
+
+  const nomeFilt = document.getElementById('rel-imp-filt-nome')?.value || '';
   const dataFilt = document.getElementById('rel-imp-filt-data')?.value || '';
 
   const filtered = impedimentos.filter(i => {
+    if (nomeFilt && i.servidorNome !== nomeFilt) return false;
     if (dataFilt && i.data !== dataFilt) return false;
-    if (nomeFilt) {
-      const n = (i.servidorNome || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      if (!n.includes(nomeFilt)) return false;
-    }
     return true;
   }).sort((a, b) => (a.data || '').localeCompare(b.data || ''));
 
@@ -3386,7 +3418,7 @@ function renderRelImpedimentos() {
       html += `<tr>
         <td>${escHtml(formatDate(i.data))}</td>
         <td class="fw-semibold">${escHtml(i.servidorNome || '')}</td>
-        <td><span class="badge ${badge}">${escHtml(i.servidorFuncao || '')}</span></td>
+        <td class="rel-hide-xs"><span class="badge ${badge}">${escHtml(i.servidorFuncao || '')}</span></td>
         <td>${escHtml(i.motivo || '')}</td>
         <td class="no-print">
           <button class="btn btn-sm btn-link text-danger p-0"
@@ -3451,6 +3483,7 @@ async function salvarImpedimentosFirebase() {
 
 async function carregarImpedimentosFirebase() {
   if (!db) { carregarImpedimentosLocal(); return; }
+  _relIniciarLoading();
   try {
     const doc = await db.collection('config').doc('impedimentos').get();
     if (doc.exists) {
@@ -3464,6 +3497,8 @@ async function carregarImpedimentosFirebase() {
   } catch (error) {
     console.error('Erro ao carregar impedimentos do Firebase:', error);
     carregarImpedimentosLocal();
+  } finally {
+    _relFinalizarLoading();
   }
 }
 
@@ -3719,7 +3754,7 @@ function carregarServidoresFirebase() {
     carregarServidoresLocal();
     return;
   }
-  
+  _relIniciarLoading();
   db.collection('servidores').get().then(snapshot => {
     const servidoresFirebase = [];
     snapshot.forEach(doc => {
@@ -3752,11 +3787,13 @@ function carregarServidoresFirebase() {
     // Carregar também a última grade salva e os impedimentos
     carregarUltimaGradeFirebase();
     carregarImpedimentosFirebase();
-    
+    _relFinalizarLoading();
+
   }).catch(error => {
     console.error('Erro ao carregar do Firebase:', error);
     carregarServidoresLocal();
     carregarGradeLocal();
+    _relFinalizarLoading();
   });
 }
 
