@@ -1319,7 +1319,7 @@ function showTab(id) {
       renderMontarGrade();
     }
   }
-  if (id === 'tab-relatorio') renderRelatorio();
+  if (id === 'tab-relatorio') { _popularSelectGrade(); renderRelatorio(); }
   if (id === 'tab-impedimentos') renderImpedimentos();
 }
 
@@ -3241,29 +3241,33 @@ function limparFiltrosRelDisp() {
   renderRelDisp();
 }
 
+function _popularSelectGrade() {
+  const sel = document.getElementById('meusdias-nome');
+  if (!sel) return;
+  const atual = sel.value;
+  const opts = [...servidores]
+    .filter(s => s && s.nome)
+    .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'))
+    .map(s => `<option value="${escHtml(s.nome)}">${escHtml(s.nome)}</option>`)
+    .join('');
+  sel.innerHTML = `<option value="">Todos os servidores</option>${opts}`;
+  if (atual) sel.value = atual;
+}
+
 function renderRelMeusDias() {
   relAbaAtiva = 'rel-meus-dias';
 
-  const sel = document.getElementById('meusdias-nome');
-  if (sel) {
-    const atual = sel.value;
-    const opts = [...servidores]
-      .filter(s => s && s.nome)
-      .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'))
-      .map(s => `<option value="${escHtml(s.nome)}"${s.nome === atual ? ' selected' : ''}>${escHtml(s.nome)}</option>`)
-      .join('');
-    sel.innerHTML = `<option value="">Todos os servidores</option>${opts}`;
-  }
+  _popularSelectGrade();
 
   const nome     = (document.getElementById('meusdias-nome')?.value || '').trim();
   const dataFilt = document.getElementById('meusdias-data')?.value || '';
   const content  = document.getElementById('meusdias-content');
 
-  if (!nome && !dataFilt) {
+  if (!grade.length) {
     content.innerHTML = `
       <div class="text-center text-muted py-5">
-        <i class="bi bi-person-search" style="font-size:2.5rem;opacity:.3"></i>
-        <div class="mt-2">Digite um nome ou selecione uma data para ver os dias alocados</div>
+        <i class="bi bi-calendar3" style="font-size:2.5rem;opacity:.3"></i>
+        <div class="mt-2">Nenhuma grade carregada</div>
       </div>`;
     return;
   }
@@ -3271,9 +3275,10 @@ function renderRelMeusDias() {
   const nomeNorm = nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const DIAS_PT  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 
+
   const diasAlocados = grade.filter(g => {
     if (!g) return false;
-    const alocNome = alocacoes[g.slotKey] || '';
+    const alocNome = alocacoes[g.slotKey] || g.servidor || '';
     if (!alocNome || alocNome === '[IGNORAR]') return false;
     if (nome && !alocNome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(nomeNorm)) return false;
     if (dataFilt && g.data !== dataFilt) return false;
