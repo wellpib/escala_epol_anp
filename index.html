@@ -1381,6 +1381,7 @@ function showRel(id) {
   document.querySelectorAll('#rel-tabs .nav-link').forEach(el => el.classList.remove('active'));
   const idx = ['rel-meus-dias','rel-impedimentos','rel-disponibilidade'].indexOf(id);
   if (idx >= 0) document.querySelectorAll('#rel-tabs .nav-link')[idx].classList.add('active');
+  relAbaAtiva = id;
   renderRelatorio();
 }
 
