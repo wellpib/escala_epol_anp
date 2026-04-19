@@ -1105,9 +1105,18 @@
           </div>
           <div class="col-12 col-md-auto d-flex align-items-end justify-content-end">
             <button class="btn btn-sm btn-link text-secondary p-0"
-                    onclick="document.getElementById('meusdias-nome').value='';document.getElementById('meusdias-data').value='';renderRelMeusDias();return false">
+                    onclick="document.getElementById('meusdias-nome').value='';document.getElementById('meusdias-data').value='';document.getElementById('meusdias-ocultar-passados').checked=_relOcultarPassadosGrade=true;renderRelMeusDias();return false">
               <i class="bi bi-x-circle me-1"></i>Limpar
             </button>
+          </div>
+          <div class="col-12 mt-1">
+            <div class="form-check form-check-sm">
+              <input class="form-check-input" type="checkbox" id="meusdias-ocultar-passados"
+                     checked onchange="_relOcultarPassadosGrade=this.checked;renderRelMeusDias()">
+              <label class="form-check-label small text-muted" for="meusdias-ocultar-passados">
+                Desmarcar datas retroativas
+              </label>
+            </div>
           </div>
         </div>
       </div>
@@ -1132,10 +1141,6 @@
                   onclick="abrirModalImpedimento()">
             <i class="bi bi-plus-circle me-1"></i><span class="d-none d-sm-inline">Novo </span>Impedimento
           </button>
-          <button class="btn btn-sm btn-outline-danger"
-                  onclick="excluirTodosImpedimentos()">
-            <i class="bi bi-trash me-1"></i><span class="d-none d-sm-inline">Limpar Tudo</span>
-          </button>
         </div>
       </div>
 
@@ -1157,6 +1162,15 @@
                     onclick="limparFiltrosRelImpedimentos()">
               <i class="bi bi-x-circle me-1"></i>Limpar filtros
             </button>
+          </div>
+          <div class="col-12 mt-1">
+            <div class="form-check form-check-sm">
+              <input class="form-check-input" type="checkbox" id="rel-imp-ocultar-passados"
+                     checked onchange="_relOcultarPassadosImp=this.checked;renderRelImpedimentos()">
+              <label class="form-check-label small text-muted" for="rel-imp-ocultar-passados">
+                Desmarcar datas retroativas
+              </label>
+            </div>
           </div>
         </div>
       </div>
@@ -3278,6 +3292,8 @@ function limparFiltrosRelDisp() {
 // LOADING RELATÓRIOS
 // ============================================================
 let _relLoadingCount = 0;
+let _relOcultarPassadosGrade = true;
+let _relOcultarPassadosImp   = true;
 
 function _relIniciarLoading() {
   _relLoadingCount++;
@@ -3316,7 +3332,7 @@ function _popularSelectServidor(id, labelTodos) {
     .filter(s => { if (nomesVistos.has(s.nome)) return false; nomesVistos.add(s.nome); return true; })
     .map(s => `<option value="${escHtml(s.nome)}">${escHtml(s.nome)}</option>`)
     .join('');
-  sel.innerHTML = `<option value="">${labelTodos || '— Selecione —'}</option>${opts}`;
+  sel.innerHTML = `<option value="">${labelTodos || 'Todos'}</option>${opts}`;
   if (atual) sel.value = atual;
 }
 
@@ -3346,10 +3362,11 @@ function renderRelMeusDias() {
 
   const nomeNorm = nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const DIAS_PT  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-
+  const hoje = new Date().toISOString().slice(0, 10);
 
   const diasAlocados = grade.filter(g => {
     if (!g) return false;
+    if (_relOcultarPassadosGrade && g.data && g.data < hoje) return false;
     const alocNome = alocacoes[g.slotKey] || g.servidor || '';
     if (!alocNome || alocNome === '[IGNORAR]') return false;
     if (nome && !alocNome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(nomeNorm)) return false;
@@ -3406,7 +3423,9 @@ function renderRelImpedimentos() {
   const nomeFilt = document.getElementById('rel-imp-filt-nome')?.value || '';
   const dataFilt = document.getElementById('rel-imp-filt-data')?.value || '';
 
+  const hojeImp = new Date().toISOString().slice(0, 10);
   const filtered = impedimentos.filter(i => {
+    if (_relOcultarPassadosImp && i.data && i.data < hojeImp) return false;
     if (nomeFilt && i.servidorNome !== nomeFilt) return false;
     if (dataFilt && i.data !== dataFilt) return false;
     return true;
@@ -3452,6 +3471,8 @@ function limparFiltrosRelImpedimentos() {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
+  const chk = document.getElementById('rel-imp-ocultar-passados');
+  if (chk) chk.checked = _relOcultarPassadosImp = true;
   renderRelImpedimentos();
 }
 
