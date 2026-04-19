@@ -1063,11 +1063,10 @@
       <div class="card p-3 mb-3 no-print shadow-sm">
         <div class="row g-2 align-items-end">
           <div class="col-12 col-sm-6 col-md-4">
-            <label class="form-label small fw-semibold mb-1">Nome (como cadastrado)</label>
-            <input type="text" class="form-control form-control-sm" id="meusdias-nome"
-                   list="meusdias-nome-list" placeholder="Digite o nome..."
-                   oninput="renderRelMeusDias()" autocomplete="off" />
-            <datalist id="meusdias-nome-list"></datalist>
+            <label class="form-label small fw-semibold mb-1">Servidor</label>
+            <select class="form-select form-select-sm" id="meusdias-nome" onchange="renderRelMeusDias()">
+              <option value="">Todos os servidores</option>
+            </select>
           </div>
           <div class="col-12 col-sm-6 col-md-3">
             <label class="form-label small fw-semibold mb-1">Data</label>
@@ -1076,7 +1075,7 @@
           </div>
           <div class="col-12 col-md-auto d-flex align-items-end">
             <button class="btn btn-sm btn-link text-secondary p-0"
-                    onclick="document.getElementById('meusdias-nome').value='';document.getElementById('meusdias-data').value='';renderRelMeusDias()">
+                    onclick="document.getElementById('meusdias-nome').value='';document.getElementById('meusdias-data').value='';renderRelMeusDias();return false">
               <i class="bi bi-x-circle me-1"></i>Limpar
             </button>
           </div>
@@ -3245,8 +3244,16 @@ function limparFiltrosRelDisp() {
 function renderRelMeusDias() {
   relAbaAtiva = 'rel-meus-dias';
 
-  const dl = document.getElementById('meusdias-nome-list');
-  if (dl) dl.innerHTML = servidores.map(s => `<option value="${escHtml(s.nome || '')}">`).join('');
+  const sel = document.getElementById('meusdias-nome');
+  if (sel) {
+    const atual = sel.value;
+    const opts = [...servidores]
+      .filter(s => s && s.nome)
+      .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'))
+      .map(s => `<option value="${escHtml(s.nome)}"${s.nome === atual ? ' selected' : ''}>${escHtml(s.nome)}</option>`)
+      .join('');
+    sel.innerHTML = `<option value="">Todos os servidores</option>${opts}`;
+  }
 
   const nome     = (document.getElementById('meusdias-nome')?.value || '').trim();
   const dataFilt = document.getElementById('meusdias-data')?.value || '';
