@@ -3309,9 +3309,11 @@ function _popularSelectServidor(id, labelTodos) {
   const sel = document.getElementById(id);
   if (!sel) return;
   const atual = sel.value;
+  const nomesVistos = new Set();
   const opts = [...servidores]
     .filter(s => s && s.nome)
     .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'))
+    .filter(s => { if (nomesVistos.has(s.nome)) return false; nomesVistos.add(s.nome); return true; })
     .map(s => `<option value="${escHtml(s.nome)}">${escHtml(s.nome)}</option>`)
     .join('');
   sel.innerHTML = `<option value="">${labelTodos || '— Selecione —'}</option>${opts}`;
