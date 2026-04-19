@@ -2148,11 +2148,9 @@ let mgFuncoesSelecionadas = new Set();
 let loteFuncoesSelecionadas = new Set();
 
 function carregarAlocacoes() {
-  if (firebaseEnabled && db) {
-    carregarAlocacoesFirebase();
-  } else {
-    carregarAlocacoesLocal();
-  }
+  // Firebase: alocações carregadas após a grade carregar (semanaLabel precisa estar definido)
+  // No startup, carrega apenas do LocalStorage como estado inicial
+  carregarAlocacoesLocal();
 }
 
 function salvarAlocacoes() {
@@ -4029,6 +4027,9 @@ async function carregarUltimaGradeFirebase() {
         }));
 
         semanaLabel = gradeData.semana || 'Grade Salva';
+
+        // Carregar alocações agora que semanaLabel está definido
+        carregarAlocacoesFirebase();
 
         // Salvar no LocalStorage também
         salvarGradeLocal();
