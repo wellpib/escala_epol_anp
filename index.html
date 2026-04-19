@@ -1352,7 +1352,11 @@ function showTab(id) {
       renderMontarGrade();
     }
   }
-  if (id === 'tab-relatorio') { _popularSelectGrade(); _relAtualizarEstado(); }
+  if (id === 'tab-relatorio') {
+    _popularSelectGrade();
+    _relAtualizarEstado();
+    if (_relLoadingCount === 0) renderRelatorio();
+  }
   if (id === 'tab-impedimentos') renderImpedimentos();
 }
 
