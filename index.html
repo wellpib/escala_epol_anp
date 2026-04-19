@@ -3998,18 +3998,18 @@ async function carregarUltimaGradeFirebase() {
     carregarGradeLocal();
     return;
   }
-  
+  _relIniciarLoading();
   try {
     // Buscar a grade mais recente
     const snapshot = await db.collection('grades')
       .orderBy('dataImportacao', 'desc')
       .limit(1)
       .get();
-    
+
     if (!snapshot.empty) {
       const doc = snapshot.docs[0];
       const gradeData = doc.data();
-      
+
       if (gradeData && gradeData.linhas && Array.isArray(gradeData.linhas) && gradeData.linhas.length > 0) {
         // Garantir que cada linha tem as propriedades necessárias
         grade = gradeData.linhas.map(g => ({
@@ -4023,14 +4023,14 @@ async function carregarUltimaGradeFirebase() {
           turma: g.turma || '',
           slotKey: g.slotKey || ''
         }));
-        
+
         semanaLabel = gradeData.semana || 'Grade Salva';
-        
+
         // Salvar no LocalStorage também
         salvarGradeLocal();
-        
+
         console.log(`Grade "${semanaLabel}" carregada do Firebase:`, grade.length, 'registros');
-        
+
         // Atualizar interface se tiver servidores carregados
         if (servidores && servidores.length > 0) {
           checkBothLoaded();
@@ -4044,6 +4044,8 @@ async function carregarUltimaGradeFirebase() {
   } catch (error) {
     console.error('Erro ao carregar grade do Firebase:', error);
     carregarGradeLocal();
+  } finally {
+    _relFinalizarLoading();
   }
 }
 
@@ -4086,19 +4088,19 @@ async function carregarAlocacoesFirebase() {
     carregarAlocacoesLocal();
     return;
   }
-  
+  _relIniciarLoading();
   try {
     const alocacaoId = semanaLabel ? semanaLabel.replace(/[^a-zA-Z0-9]/g, '_') : 'alocacoes_atual';
-    
+
     const doc = await db.collection('alocacoes').doc(alocacaoId).get();
-    
+
     if (doc.exists) {
       const data = doc.data();
       alocacoes = data.alocacoes || {};
-      
+
       // Salvar também no LocalStorage
       localStorage.setItem(STORAGE_KEY, JSON.stringify(alocacoes));
-      
+
       console.log(`Alocações carregadas do Firebase: ${Object.keys(alocacoes).length} alocações`);
     } else {
       console.log('Nenhuma alocação encontrada no Firebase. Tentando LocalStorage...');
@@ -4107,6 +4109,8 @@ async function carregarAlocacoesFirebase() {
   } catch (error) {
     console.error('Erro ao carregar alocações do Firebase:', error);
     carregarAlocacoesLocal();
+  } finally {
+    _relFinalizarLoading();
   }
 }
 
