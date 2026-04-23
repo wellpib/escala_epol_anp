@@ -669,6 +669,18 @@
                 <label class="form-label">E-mail</label>
                 <input type="email" class="form-control" id="serv-email" placeholder="email@pf.gov.br" />
               </div>
+              <div class="col-12">
+                <div class="form-check mt-2">
+                  <input class="form-check-input" type="checkbox" id="serv-nao-disponivel">
+                  <label class="form-check-label" for="serv-nao-disponivel">
+                    <i class="bi bi-x-circle text-danger me-1"></i>
+                    <strong>Servidor não disponível</strong> — não permitir alocação em nenhuma aba
+                  </label>
+                </div>
+                <div class="form-text text-muted">
+                  Ao marcar esta opção, o servidor não estará disponível para seleção nas abas de alocação e não será considerado na distribuição automática.
+                </div>
+              </div>
             </div>
             <div class="alert alert-info mt-3 mb-0">
               <i class="bi bi-info-circle me-2"></i>
@@ -802,10 +814,15 @@
   <div id="tab-grade" style="display:none">
     <div class="d-flex justify-content-between align-items-center mb-2">
       <h5 class="section-title mb-0">Grade Completa — Histórico de Grades</h5>
-      <button class="btn btn-sm no-print" style="background:var(--pf-azul);color:#fff"
-              onclick="novoRegistroGradeCompleta()">
-        <i class="bi bi-plus-lg me-1"></i>Cadastrar
-      </button>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm no-print" style="background:var(--pf-azul);color:#fff"
+                onclick="novoRegistroGradeCompleta()">
+          <i class="bi bi-plus-lg me-1"></i>Cadastrar
+        </button>
+        <button class="btn btn-sm btn-outline-danger no-print" onclick="abrirModalLimparGradeCompleta()" title="Excluir todo o histórico (requer senha)">
+          <i class="bi bi-trash me-1"></i>Limpar Tudo
+        </button>
+      </div>
     </div>
 
     <div class="card p-3 mb-3 no-print shadow-sm">
@@ -921,10 +938,7 @@
         </div>
       </div>
       <!-- Botão limpar filtros -->
-      <div class="mt-2 d-flex justify-content-between align-items-center">
-        <button class="btn btn-sm btn-outline-danger no-print" onclick="abrirModalLimparGradeCompleta()" title="Excluir todo o histórico (requer senha)">
-          <i class="bi bi-trash me-1"></i>Limpar Tudo
-        </button>
+      <div class="mt-2 d-flex justify-content-end align-items-center">
         <button class="btn btn-sm btn-link text-secondary p-0" onclick="limparFiltrosGrade()">
           <i class="bi bi-x-circle me-1"></i>Limpar filtros
         </button>
@@ -1803,6 +1817,9 @@ function parseAloc(file) {
   reader.onload = function(e) {
     try {
       const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
+      
+      // Preservar dados editados manualmente antes de limpar o array
+      const servidoresAntigos = [...servidores];
       servidores = [];
 
       // Normaliza string: maiúsculo, sem acento, sem espaços extras
@@ -1857,7 +1874,12 @@ function parseAloc(file) {
           const dtIni = iDtIni >= 0 ? parseDate(r[iDtIni]) : null;
           const dtFim = iDtFim >= 0 ? parseDate(r[iDtFim]) : null;
 
-          servidores.push({
+          // Verificar se servidor já existe nos dados antigos (para preservar edições manuais)
+          const servidorAntigo = servidoresAntigos.find(s => 
+            s.nome === nome && s.cargo === (iCargo >= 0 ? (r[iCargo]||'').toString().trim() : '')
+          );
+
+          const novoServidor = {
             nome,
             cargo:   iCargo >= 0 ? (r[iCargo]||'').toString().trim() : '',
             lotacao: iLot   >= 0 ? (r[iLot]  ||'').toString().trim() : '',
@@ -1866,7 +1888,35 @@ function parseAloc(file) {
             dtFim,  // null = sem restrição de data
             tel:   iTel   >= 0 ? (r[iTel]  ||'').toString().trim() : '',
             email: iEmail >= 0 ? (r[iEmail]||'').toString().trim() : '',
-          });
+            naoDisponivel: false,  // Por padrão, servidores do Excel estão disponíveis
+          };
+
+          // Se servidor já existia e foi editado manualmente, preservar campos editados
+          if (servidorAntigo) {
+            // Preservar campos que podem ter sido editados manualmente
+            if (servidorAntigo.naoDisponivel !== undefined) {
+              novoServidor.naoDisponivel = servidorAntigo.naoDisponivel;
+            }
+            if (servidorAntigo.tel && servidorAntigo.origem === 'MANUAL') {
+              novoServidor.tel = servidorAntigo.tel;
+            }
+            if (servidorAntigo.email && servidorAntigo.origem === 'MANUAL') {
+              novoServidor.email = servidorAntigo.email;
+            }
+            if (servidorAntigo.lotacao && servidorAntigo.origem === 'MANUAL') {
+              novoServidor.lotacao = servidorAntigo.lotacao;
+            }
+            // Preservar ID se existir
+            if (servidorAntigo.id) {
+              novoServidor.id = servidorAntigo.id;
+            }
+            // Manter origem se foi editado manualmente
+            if (servidorAntigo.origem === 'MANUAL') {
+              novoServidor.origem = 'MANUAL';
+            }
+          }
+
+          servidores.push(novoServidor);
         }
       });
 
@@ -2028,8 +2078,17 @@ function renderServidores() {
     const periodo = s.dtIni || s.dtFim
       ? `${s.dtIni ? formatDate(s.dtIni) : '?'} → ${s.dtFim ? formatDate(s.dtFim) : '?'}`
       : '<span class="text-success">Disponibilidade total</span>';
-    html += `<tr>
-      <td class="fw-semibold">${escHtml(s.nome)}</td>
+    
+    // Adicionar badge de "Não Disponível" se marcado
+    const naoDispBadge = s.naoDisponivel 
+      ? '<span class="badge bg-danger ms-2"><i class="bi bi-x-circle me-1"></i>Não Disponível</span>' 
+      : '';
+    
+    // Aplicar estilo visual diferente se não disponível
+    const rowStyle = s.naoDisponivel ? 'opacity: 0.6; background-color: #ffebee;' : '';
+    
+    html += `<tr style="${rowStyle}">
+      <td class="fw-semibold">${escHtml(s.nome)}${naoDispBadge}</td>
       <td>${escHtml(s.cargo)}</td>
       <td><span class="badge ${badge}">${escHtml(s.funcao) || 'Não definida'}</span></td>
       <td>${periodo}</td>
@@ -2674,6 +2733,9 @@ function getTurnoFromHorario(horario) {
 }
 
 function isDisponivelNaData(s, dt, horario) {
+  // Verificar se o servidor está marcado como não disponível
+  if (s.naoDisponivel === true) return false;
+  
   // Verificar impedimentos cadastrados para este servidor nesta data/turno
   const temImpedimento = impedimentos.some(imp => {
     if (imp.servidorNome !== s.nome || imp.data !== dt) return false;
@@ -2888,10 +2950,24 @@ function limparTudoMontarGrade() {
   if (!confirm('Limpar TUDO da aba Montar Grade?\n\nIsso apagará a grade e todas as alocações. Esta ação não pode ser desfeita.')) return;
 
   grade.length = 0;
+  semanaLabel = '';
   alocacoes = {};
+
+  // Persiste localmente
   salvarAlocacoes();
   salvarGradeLocal();
-  if (firebaseEnabled && db) salvarGradeNoFirebase();
+
+  // Firebase: salva documento sentinela com linhas vazias e timestamp atual.
+  // Ao recarregar, carregarUltimaGradeFirebase busca o documento mais recente;
+  // como linhas está vazio, ele não carrega nada — mantendo a limpeza.
+  if (firebaseEnabled && db) {
+    db.collection('grades').doc('_grade_limpa').set({
+      semana: '',
+      dataImportacao: new Date().toISOString(),
+      linhas: []
+    }).catch(err => console.error('Erro ao salvar sentinela de limpeza:', err));
+  }
+
   renderMontarGrade();
   mostrarToast('Montar Grade limpa com sucesso.');
 }
@@ -2949,11 +3025,13 @@ function distribuirEscalaAutomaticamente() {
   
   // Identificar servidores disponíveis por função
   const servidoresProf = servidores.filter(s => {
+    if (s.naoDisponivel === true) return false;
     const funcaoUpper = (s.funcao || '').toUpperCase();
     return funcaoUpper.includes('PROFESSOR') || funcaoUpper.includes('PROF');
   });
   
   const servidoresMon = servidores.filter(s => {
+    if (s.naoDisponivel === true) return false;
     const funcaoUpper = (s.funcao || '').toUpperCase();
     return funcaoUpper.includes('MONITOR') || funcaoUpper.includes('MON');
   });
@@ -3425,6 +3503,9 @@ function renderMontarGrade() {
     // - Função com MONITOR → servidores Monitor OU Professor (professor pode atuar como monitor)
     // - Outras funções → todos os servidores disponíveis
     const dispServs = servidores.filter(s => {
+      // Verificar se o servidor está marcado como não disponível
+      if (s.naoDisponivel === true) return false;
+      
       if (!isDisponivelNaData(s, g.data)) return false;
       
       const funcaoVagaUpper = (g.funcao || '').toUpperCase();
@@ -4021,6 +4102,8 @@ function renderRelDisp() {
 
   const filtered = servidores.filter(s => {
     if (!s) return false;
+    // Não mostrar servidores marcados como não disponível
+    if (s.naoDisponivel === true) return false;
     if (nomeFilt && s.nome !== nomeFilt) return false;
     if (funcFilt && !(s.funcao || '').toUpperCase().includes(funcFilt)) return false;
     if (dataFilt && !isDisponivelNaData(s, dataFilt)) return false;
@@ -4666,6 +4749,7 @@ function carregarServidoresFirebase() {
         dtFim: data.dtFim || null,
         tel: data.tel || '',
         email: data.email || '',
+        naoDisponivel: data.naoDisponivel || false,
         origem: data.origem || 'FIREBASE'
       });
     });
@@ -5038,6 +5122,22 @@ function carregarServidoresLocal() {
           // Normalizar função ao carregar
           sl.funcao = normalizarFuncao(sl.funcao || '');
           servidores.push(sl);
+        } else {
+          // Atualizar servidor existente com dados editados manualmente
+          // Prioriza dados manuais (origem MANUAL) sobre dados do Excel
+          if (sl.origem === 'MANUAL' || existe.origem === 'MANUAL') {
+            // Atualizar campos que podem ter sido editados
+            existe.funcao = normalizarFuncao(sl.funcao || existe.funcao || '');
+            existe.cargo = sl.cargo || existe.cargo;
+            existe.lotacao = sl.lotacao || existe.lotacao;
+            existe.dtIni = sl.dtIni !== undefined ? sl.dtIni : existe.dtIni;
+            existe.dtFim = sl.dtFim !== undefined ? sl.dtFim : existe.dtFim;
+            existe.tel = sl.tel !== undefined ? sl.tel : existe.tel;
+            existe.email = sl.email !== undefined ? sl.email : existe.email;
+            existe.naoDisponivel = sl.naoDisponivel !== undefined ? sl.naoDisponivel : existe.naoDisponivel;
+            existe.origem = sl.origem || existe.origem;
+            if (sl.id) existe.id = sl.id;
+          }
         }
       });
       console.log('Servidores carregados do LocalStorage:', servidoresLocal.length);
@@ -5073,6 +5173,7 @@ function abrirModalServidor() {
   document.getElementById('modalServidorTitulo').textContent = 'Novo Servidor';
   document.getElementById('formServidor').reset();
   document.getElementById('serv-id').value = '';
+  document.getElementById('serv-nao-disponivel').checked = false;
   
   const modal = new bootstrap.Modal(document.getElementById('modalServidor'));
   modal.show();
@@ -5103,6 +5204,7 @@ function editarServidor(identificador) {
   document.getElementById('serv-dtfim').value = servidor.dtFim || '';
   document.getElementById('serv-tel').value = servidor.tel || '';
   document.getElementById('serv-email').value = servidor.email || '';
+  document.getElementById('serv-nao-disponivel').checked = servidor.naoDisponivel || false;
   
   const modal = new bootstrap.Modal(document.getElementById('modalServidor'));
   modal.show();
@@ -5127,6 +5229,7 @@ function salvarServidor() {
     dtFim: document.getElementById('serv-dtfim').value || null,
     tel: document.getElementById('serv-tel').value.trim(),
     email: document.getElementById('serv-email').value.trim(),
+    naoDisponivel: document.getElementById('serv-nao-disponivel').checked,
     origem: 'MANUAL'
   };
   
