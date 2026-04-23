@@ -800,7 +800,13 @@
 
   <!-- ===================== TAB: GRADE ===================== -->
   <div id="tab-grade" style="display:none">
-    <h5 class="section-title">Grade Completa — Histórico de Grades</h5>
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h5 class="section-title mb-0">Grade Completa — Histórico de Grades</h5>
+      <button class="btn btn-sm no-print" style="background:var(--pf-azul);color:#fff"
+              onclick="novoRegistroGradeCompleta()">
+        <i class="bi bi-plus-lg me-1"></i>Cadastrar
+      </button>
+    </div>
 
     <div class="card p-3 mb-3 no-print shadow-sm">
       <div class="row g-2 align-items-end">
@@ -1481,7 +1487,7 @@
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header" style="background:var(--pf-azul);color:#fff">
-        <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>Editar Registro — Grade Completa</h5>
+        <h5 class="modal-title" id="edit-gc-modal-titulo"><i class="bi bi-pencil-square me-2"></i>Editar Registro — Grade Completa</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -2422,9 +2428,31 @@ function renderGrade() {
   document.getElementById('grade-count-footer').textContent = filtered.length + ' registro(s) exibido(s) de ' + gradeCompleta.length + ' total';
 }
 
+function novoRegistroGradeCompleta() {
+  document.getElementById('edit-gc-modal-titulo').innerHTML =
+    '<i class="bi bi-plus-circle me-2"></i>Novo Registro — Grade Completa';
+  document.getElementById('edit-gc-idx').value  = -1;
+  document.getElementById('edit-gc-data').value    = new Date().toISOString().slice(0, 10);
+  document.getElementById('edit-gc-horario').value = '';
+  document.getElementById('edit-gc-modulo').value  = '';
+  document.getElementById('edit-gc-codaula').value = '';
+  document.getElementById('edit-gc-funcao').value  = '';
+  document.getElementById('edit-gc-turma').value   = '';
+  const gcSrvSel = document.getElementById('edit-gc-servidor');
+  const gcSrvNomes = [...new Set([
+    ...servidores.map(s => s.nome),
+    ...gradeCompleta.map(e => e.servidorAlocado || '').filter(Boolean)
+  ])].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  gcSrvSel.innerHTML = '<option value="">— Vazio —</option>' +
+    gcSrvNomes.map(n => `<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('');
+  new bootstrap.Modal(document.getElementById('modalEditarGradeCompleta')).show();
+}
+
 function editarLinhaGradeCompleta(idx) {
   const g = gradeCompleta[idx];
   if (!g) return;
+  document.getElementById('edit-gc-modal-titulo').innerHTML =
+    '<i class="bi bi-pencil-square me-2"></i>Editar Registro — Grade Completa';
   document.getElementById('edit-gc-idx').value = idx;
   document.getElementById('edit-gc-data').value    = g.data     || '';
   document.getElementById('edit-gc-horario').value = g.horario  || '';
@@ -2450,21 +2478,33 @@ function editarLinhaGradeCompleta(idx) {
 }
 
 function salvarEdicaoGradeCompleta() {
-  const idx = parseInt(document.getElementById('edit-gc-idx').value);
-  if (isNaN(idx) || idx < 0 || idx >= gradeCompleta.length) return;
-  const g = gradeCompleta[idx];
-  g.data           = document.getElementById('edit-gc-data').value;
-  g.horario        = document.getElementById('edit-gc-horario').value.trim();
-  g.modulo         = document.getElementById('edit-gc-modulo').value.trim();
-  g.codAula        = document.getElementById('edit-gc-codaula').value.trim();
-  g.funcao         = document.getElementById('edit-gc-funcao').value.trim();
-  g.turma          = document.getElementById('edit-gc-turma').value.trim();
-  g.servidorAlocado = document.getElementById('edit-gc-servidor').value.trim();
+  const idx     = parseInt(document.getElementById('edit-gc-idx').value);
+  const isNovo  = isNaN(idx) || idx === -1;
+  if (!isNovo && (idx < 0 || idx >= gradeCompleta.length)) return;
+
+  const dados = {
+    data:            document.getElementById('edit-gc-data').value,
+    horario:         document.getElementById('edit-gc-horario').value.trim(),
+    modulo:          document.getElementById('edit-gc-modulo').value.trim(),
+    codAula:         document.getElementById('edit-gc-codaula').value.trim(),
+    funcao:          document.getElementById('edit-gc-funcao').value.trim(),
+    turma:           document.getElementById('edit-gc-turma').value.trim(),
+    servidorAlocado: document.getElementById('edit-gc-servidor').value,
+  };
+
+  if (isNovo) {
+    dados.slotKey      = 'manual_' + Date.now();
+    dados.submetidaEm  = new Date().toISOString();
+    gradeCompleta.push(dados);
+  } else {
+    Object.assign(gradeCompleta[idx], dados);
+  }
+
   salvarGradeCompleta();
   buildGradeCompletaFilters();
   renderGrade();
   bootstrap.Modal.getInstance(document.getElementById('modalEditarGradeCompleta')).hide();
-  mostrarToast('Registro atualizado com sucesso!');
+  mostrarToast(isNovo ? 'Registro cadastrado com sucesso!' : 'Registro atualizado com sucesso!');
 }
 
 function excluirLinhaGradeCompleta(idx) {
