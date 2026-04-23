@@ -271,6 +271,7 @@
     </button>
     <div class="collapse navbar-collapse" id="navMenu">
       <ul class="navbar-nav ms-auto" id="nav-tabs-list">
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-principal')"><i class="bi bi-house-fill me-1"></i>Início</a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-upload')"><i class="bi bi-upload me-1"></i>Carregar Arquivos</a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-servidores')"><i class="bi bi-people-fill me-1"></i>Servidores</a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-impedimentos')"><i class="bi bi-slash-circle me-1"></i>Impedimentos</a></li>
@@ -289,6 +290,194 @@
 </nav>
 
 <div class="container-fluid py-3 px-3 px-md-4" id="main-content" style="display:none">
+
+  <!-- ===================== TAB: PRINCIPAL (ADMIN) ===================== -->
+  <div id="tab-principal" style="display:none">
+    <div class="row justify-content-center">
+      <div class="col-12 col-lg-10">
+
+        <!-- Cabeçalho de boas-vindas -->
+        <div class="text-center py-4 mb-4">
+          <i class="bi bi-shield-fill mb-3" style="font-size:3.5rem;color:var(--pf-azul)"></i>
+          <h2 class="fw-bold mb-1" style="color:var(--pf-azul)">Bem-vindo ao Portal ePol</h2>
+          <p class="text-muted mb-0" style="max-width:600px;margin:0 auto;font-size:1.05rem">
+            Sistema de Gestão de Alocações — painel do Administrador
+          </p>
+        </div>
+
+        <!-- Fluxo operacional -->
+        <div class="card shadow-sm mb-4">
+          <div class="card-header fw-semibold" style="background:var(--pf-azul);color:#fff;font-size:1rem">
+            <i class="bi bi-diagram-3-fill me-2"></i>Fluxo de Operação Recomendado
+          </div>
+          <div class="card-body">
+            <div class="row g-3 text-center">
+
+              <div class="col-6 col-md-4 col-lg-2">
+                <div class="d-flex flex-column align-items-center gap-2">
+                  <div style="width:52px;height:52px;border-radius:50%;background:var(--pf-azul);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:700">1</div>
+                  <div class="small fw-semibold text-dark">Carregar Arquivos</div>
+                  <div class="text-muted" style="font-size:.78rem">Importe as planilhas de disponibilidade e grade de horários</div>
+                  <button class="btn btn-sm btn-outline-primary mt-auto" onclick="showTab('tab-upload')">Acessar</button>
+                </div>
+              </div>
+
+              <div class="col-6 col-md-4 col-lg-2">
+                <div class="d-flex flex-column align-items-center gap-2">
+                  <div style="width:52px;height:52px;border-radius:50%;background:var(--pf-azul);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:700">2</div>
+                  <div class="small fw-semibold text-dark">Servidores</div>
+                  <div class="text-muted" style="font-size:.78rem">Gerencie o cadastro, funções e datas de disponibilidade</div>
+                  <button class="btn btn-sm btn-outline-primary mt-auto" onclick="showTab('tab-servidores')">Acessar</button>
+                </div>
+              </div>
+
+              <div class="col-6 col-md-4 col-lg-2">
+                <div class="d-flex flex-column align-items-center gap-2">
+                  <div style="width:52px;height:52px;border-radius:50%;background:var(--pf-azul);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:700">3</div>
+                  <div class="small fw-semibold text-dark">Impedimentos</div>
+                  <div class="text-muted" style="font-size:.78rem">Registre datas bloqueadas por turno para cada servidor</div>
+                  <button class="btn btn-sm btn-outline-primary mt-auto" onclick="showTab('tab-impedimentos')">Acessar</button>
+                </div>
+              </div>
+
+              <div class="col-6 col-md-4 col-lg-2">
+                <div class="d-flex flex-column align-items-center gap-2">
+                  <div style="width:52px;height:52px;border-radius:50%;background:var(--pf-azul);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:700">4</div>
+                  <div class="small fw-semibold text-dark">Montar Grade</div>
+                  <div class="text-muted" style="font-size:.78rem">Aloque professores e monitores manualmente ou automaticamente</div>
+                  <button class="btn btn-sm btn-outline-primary mt-auto" onclick="showTab('tab-montar')">Acessar</button>
+                </div>
+              </div>
+
+              <div class="col-6 col-md-4 col-lg-2">
+                <div class="d-flex flex-column align-items-center gap-2">
+                  <div style="width:52px;height:52px;border-radius:50%;background:var(--pf-azul);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:700">5</div>
+                  <div class="small fw-semibold text-dark">Grade Completa</div>
+                  <div class="text-muted" style="font-size:.78rem">Histórico consolidado de todas as submissões de grade</div>
+                  <button class="btn btn-sm btn-outline-primary mt-auto" onclick="showTab('tab-grade')">Acessar</button>
+                </div>
+              </div>
+
+              <div class="col-6 col-md-4 col-lg-2">
+                <div class="d-flex flex-column align-items-center gap-2">
+                  <div style="width:52px;height:52px;border-radius:50%;background:var(--pf-azul);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:700">6</div>
+                  <div class="small fw-semibold text-dark">Relatórios</div>
+                  <div class="text-muted" style="font-size:.78rem">Visualize alocações, carga horária, vagas e impedimentos</div>
+                  <button class="btn btn-sm btn-outline-primary mt-auto" onclick="showTab('tab-relatorio')">Acessar</button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Cards de detalhamento -->
+        <div class="row g-3 mb-4">
+
+          <div class="col-12 col-md-6">
+            <div class="card h-100 shadow-sm">
+              <div class="card-body">
+                <h6 class="fw-bold mb-2" style="color:var(--pf-azul)">
+                  <i class="bi bi-upload me-2"></i>1. Carregar Arquivos
+                </h6>
+                <ul class="small text-muted mb-0 ps-3">
+                  <li>Importe a planilha <strong>XLSX de servidores</strong> com nomes, funções e datas de contrato</li>
+                  <li>Importe a planilha <strong>XLSX de grade horária</strong> com datas, horários, módulos e turmas</li>
+                  <li>Os dados são sincronizados automaticamente com o Firebase</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <div class="card h-100 shadow-sm">
+              <div class="card-body">
+                <h6 class="fw-bold mb-2" style="color:var(--pf-azul)">
+                  <i class="bi bi-people-fill me-2"></i>2. Servidores
+                </h6>
+                <ul class="small text-muted mb-0 ps-3">
+                  <li>Cadastre e edite servidores individualmente</li>
+                  <li>Defina <strong>função</strong> (Professor / Monitor) e período de disponibilidade</li>
+                  <li>Servidores fora do período de contrato são automaticamente excluídos das alocações</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <div class="card h-100 shadow-sm">
+              <div class="card-body">
+                <h6 class="fw-bold mb-2" style="color:var(--pf-azul)">
+                  <i class="bi bi-slash-circle me-2"></i>3. Impedimentos
+                </h6>
+                <ul class="small text-muted mb-0 ps-3">
+                  <li>Registre datas em que o servidor <strong>não está disponível</strong></li>
+                  <li>Selecione os turnos afetados: <strong>Manhã, Tarde ou Noite</strong></li>
+                  <li>O sistema de alocação automática respeita todos os impedimentos cadastrados</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <div class="card h-100 shadow-sm">
+              <div class="card-body">
+                <h6 class="fw-bold mb-2" style="color:var(--pf-azul)">
+                  <i class="bi bi-pencil-square me-2"></i>4. Montar Grade
+                </h6>
+                <ul class="small text-muted mb-0 ps-3">
+                  <li>Visualize as vagas da semana e aloque servidores <strong>manualmente</strong></li>
+                  <li>Use <strong>Distribuir Automaticamente</strong> para que o sistema sugira as alocações</li>
+                  <li>Submeta a grade para salvar no histórico da Grade Completa</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <div class="card h-100 shadow-sm">
+              <div class="card-body">
+                <h6 class="fw-bold mb-2" style="color:var(--pf-azul)">
+                  <i class="bi bi-archive-fill me-2"></i>5. Grade Completa
+                </h6>
+                <ul class="small text-muted mb-0 ps-3">
+                  <li>Histórico de todas as grades submetidas com data de submissão</li>
+                  <li>Filtros por data, função, servidor e <strong>detecção de conflitos</strong></li>
+                  <li>Edite ou exclua registros individuais diretamente na tabela</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <div class="card h-100 shadow-sm">
+              <div class="card-body">
+                <h6 class="fw-bold mb-2" style="color:var(--pf-azul)">
+                  <i class="bi bi-bar-chart-fill me-2"></i>6. Relatórios
+                </h6>
+                <ul class="small text-muted mb-0 ps-3">
+                  <li><strong>Meus Dias:</strong> dias alocados por servidor</li>
+                  <li><strong>Impedimentos:</strong> impedimentos registrados com filtros e edição</li>
+                  <li><strong>Disponibilidade:</strong> visão geral de quem está disponível por data</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Aviso de suporte -->
+        <div class="alert alert-info d-flex align-items-center gap-3 mb-4" role="alert">
+          <i class="bi bi-info-circle-fill fs-5 flex-shrink-0"></i>
+          <div class="small">
+            <strong>Dica:</strong> Comece sempre pelo passo <strong>1 — Carregar Arquivos</strong> ao iniciar uma nova semana.
+            Em seguida, verifique os impedimentos antes de distribuir a grade automaticamente.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
 
   <!-- ===================== TAB: UPLOAD ===================== -->
   <div id="tab-upload">
@@ -1017,9 +1206,9 @@
             <thead style="background:var(--pf-azul);color:#fff">
               <tr>
                 <th style="width:110px">Data</th>
-                <th>Servidor</th>
+                <th style="width:200px;white-space:nowrap">Servidor</th>
+                <th style="width:200px">Turnos</th>
                 <th style="width:130px">Função</th>
-                <th style="width:130px">Turnos</th>
                 <th>Motivo</th>
                 <th class="no-print" style="width:90px">Ações</th>
               </tr>
@@ -1253,10 +1442,11 @@
               <thead style="background:var(--pf-azul);color:#fff">
                 <tr>
                   <th style="width:100px">Data</th>
-                  <th>Servidor</th>
+                  <th style="width:200px;white-space:nowrap">Servidor</th>
+                  <th class="rel-hide-xs" style="width:200px">Turno</th>
                   <th class="rel-hide-xs" style="width:120px">Função</th>
                   <th>Motivo</th>
-                  <th class="no-print" style="width:50px">Ações</th>
+                  <th class="no-print" style="width:80px">Ações</th>
                 </tr>
               </thead>
               <tbody id="tbl-rel-imp-body"></tbody>
@@ -1314,9 +1504,9 @@
           </div>
           <div class="col-12">
             <label class="form-label">Servidor Alocado</label>
-            <input type="text" class="form-control" id="edit-gc-servidor"
-                   list="edit-gc-servidor-list" placeholder="Nome do servidor..." />
-            <datalist id="edit-gc-servidor-list"></datalist>
+            <select class="form-select" id="edit-gc-servidor">
+              <option value="">— Vazio —</option>
+            </select>
           </div>
         </div>
       </div>
@@ -1372,7 +1562,7 @@ let usuarioAtual = null; // { perfil: 'admin' | 'viewer' }
 const PERFIS_CONFIG = {
   admin: {
     nome: 'Administrador',
-    abas: ['tab-upload','tab-servidores','tab-grade','tab-montar','tab-impedimentos','tab-relatorio']
+    abas: ['tab-principal','tab-upload','tab-servidores','tab-grade','tab-montar','tab-impedimentos','tab-relatorio']
   },
   viewer: {
     nome: 'Visualizador',
@@ -1510,7 +1700,7 @@ let impedimentos = []; // [{id, servidorNome, servidorFuncao, data, motivo}]
 // NAVEGAÇÃO
 // ============================================================
 function showTab(id) {
-  ['tab-upload','tab-servidores','tab-grade','tab-montar','tab-relatorio','tab-impedimentos']
+  ['tab-principal','tab-upload','tab-servidores','tab-grade','tab-montar','tab-relatorio','tab-impedimentos']
     .forEach(t => document.getElementById(t).style.display = 'none');
   document.getElementById(id).style.display = '';
   if (id === 'tab-grade') {
@@ -2203,15 +2393,20 @@ function editarLinhaGradeCompleta(idx) {
   document.getElementById('edit-gc-codaula').value = g.codAula  || '';
   document.getElementById('edit-gc-funcao').value  = g.funcao   || '';
   document.getElementById('edit-gc-turma').value   = g.turma    || '';
-  document.getElementById('edit-gc-servidor').value = g.servidorAlocado || '';
-  // popular datalist com servidores cadastrados
-  document.getElementById('edit-gc-servidor-list').innerHTML =
-    [...new Set([
-      ...servidores.map(s => s.nome),
-      ...gradeCompleta.map(e => e.servidorAlocado || '').filter(Boolean)
-    ])].sort((a, b) => a.localeCompare(b, 'pt-BR'))
-      .map(n => `<option value="${escHtml(n)}">`)
-      .join('');
+  // popular select de servidores
+  const gcSrvSel = document.getElementById('edit-gc-servidor');
+  const gcSrvAtual = g.servidorAlocado || '';
+  const gcSrvNomes = [...new Set([
+    ...servidores.map(s => s.nome),
+    ...gradeCompleta.map(e => e.servidorAlocado || '').filter(Boolean)
+  ])].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  gcSrvSel.innerHTML = '<option value="">— Vazio —</option>' +
+    gcSrvNomes.map(n => `<option value="${escHtml(n)}"${n === gcSrvAtual ? ' selected' : ''}>${escHtml(n)}</option>`).join('');
+  if (gcSrvAtual && !gcSrvNomes.includes(gcSrvAtual)) {
+    const opt = document.createElement('option');
+    opt.value = gcSrvAtual; opt.textContent = gcSrvAtual; opt.selected = true;
+    gcSrvSel.appendChild(opt);
+  }
   new bootstrap.Modal(document.getElementById('modalEditarGradeCompleta')).show();
 }
 
@@ -3956,17 +4151,25 @@ function renderRelImpedimentos() {
 
   let html = '';
   if (!filtered.length) {
-    html = '<tr><td colspan="5" class="text-center text-muted py-3">Nenhum impedimento encontrado</td></tr>';
+    html = '<tr><td colspan="6" class="text-center text-muted py-3">Nenhum impedimento encontrado</td></tr>';
   } else {
+    const turnoColors = { 'MANHÃ': 'bg-warning text-dark', 'TARDE': 'bg-info text-white', 'NOITE': 'bg-dark text-white' };
     filtered.forEach(i => {
       const fUp = (i.servidorFuncao || '').toUpperCase();
       const badge = fUp.includes('PROFESSOR') ? 'badge-professor' : fUp.includes('MONITOR') ? 'badge-monitor' : 'bg-secondary';
+      const turnosImp = (i.turnos && i.turnos.length) ? i.turnos : ['MANHÃ', 'TARDE', 'NOITE'];
+      const turnosBadges = turnosImp.map(t => `<span class="badge ${turnoColors[t] || 'bg-secondary'} me-1" style="font-size:.7rem">${escHtml(t)}</span>`).join('');
       html += `<tr>
         <td>${escHtml(formatDate(i.data))}</td>
-        <td class="fw-semibold">${escHtml(i.servidorNome || '')}</td>
+        <td class="fw-semibold" style="white-space:nowrap">${escHtml(i.servidorNome || '')}</td>
+        <td class="rel-hide-xs">${turnosBadges}</td>
         <td class="rel-hide-xs"><span class="badge ${badge}">${escHtml(i.servidorFuncao || '')}</span></td>
         <td>${escHtml(i.motivo || '')}</td>
         <td class="no-print">
+          <button class="btn btn-sm btn-link text-primary p-0 me-1"
+                  onclick="editarImpedimento('${escHtml(i.id)}')" title="Editar">
+            <i class="bi bi-pencil"></i>
+          </button>
           <button class="btn btn-sm btn-link text-danger p-0"
                   onclick="_excluirImpFromRel('${escHtml(i.id)}')" title="Excluir">
             <i class="bi bi-trash"></i>
@@ -4047,6 +4250,7 @@ async function carregarImpedimentosFirebase() {
     carregarImpedimentosLocal();
   } finally {
     _relFinalizarLoading();
+    renderImpedimentos();
   }
 }
 
@@ -4219,9 +4423,9 @@ function renderImpedimentos() {
     const turnosBadges = turnosImp.map(t => `<span class="badge ${turnoColors[t] || 'bg-secondary'} me-1" style="font-size:.7rem">${escHtml(t)}</span>`).join('');
     html += `<tr>
       <td><strong>${escHtml(formatDate(i.data))}</strong></td>
-      <td class="fw-semibold">${escHtml(i.servidorNome)}</td>
-      <td>${i.servidorFuncao ? '<span class="badge ' + badge + '">' + escHtml(i.servidorFuncao) + '</span>' : '—'}</td>
+      <td class="fw-semibold" style="white-space:nowrap">${escHtml(i.servidorNome)}</td>
       <td>${turnosBadges}</td>
+      <td>${i.servidorFuncao ? '<span class="badge ' + badge + '">' + escHtml(i.servidorFuncao) + '</span>' : '—'}</td>
       <td>${escHtml(i.motivo) || '<span class="text-muted">—</span>'}</td>
       <td class="no-print" style="white-space:nowrap">
         <button class="btn btn-sm btn-outline-primary btn-acao me-1" onclick="editarImpedimento('${escHtml(i.id)}')" title="Editar">
