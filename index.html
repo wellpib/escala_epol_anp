@@ -250,6 +250,13 @@
              onkeydown="if(event.key==='Enter') fazerLogin()" />
     </div>
 
+    <div class="form-check mb-2">
+      <input class="form-check-input" type="checkbox" id="login-lembrar">
+      <label class="form-check-label small text-muted" for="login-lembrar">
+        <i class="bi bi-device-phone me-1"></i>Lembrar senha neste dispositivo
+      </label>
+    </div>
+
     <div class="text-danger small mb-3" id="login-erro" style="min-height:1.2rem"></div>
 
     <button class="btn w-100 fw-semibold py-2" style="background:var(--pf-azul);color:#fff;font-size:1rem"
@@ -1563,6 +1570,7 @@
 const SENHA_ADMIN  = 'Admin@2025';
 const SENHA_VIEWER = 'Prof@2025';
 const AUTH_SESSION_KEY = 'epol-auth-session';
+const LEMBRAR_KEY      = 'epol-lembrar-senha';
 
 let usuarioAtual = null; // { perfil: 'admin' | 'viewer' }
 
@@ -1596,6 +1604,20 @@ function mostrarLogin() {
   document.getElementById('login-overlay').style.display = 'flex';
   document.getElementById('main-navbar').style.display  = 'none';
   document.getElementById('main-content').style.display = 'none';
+  _preencherCredenciaisSalvas();
+}
+
+function _preencherCredenciaisSalvas() {
+  try {
+    const saved = localStorage.getItem(LEMBRAR_KEY);
+    if (!saved) return;
+    const { perfil, senha } = JSON.parse(saved);
+    if (perfil && senha) {
+      selecionarPerfil(perfil);
+      document.getElementById('login-senha').value = senha;
+      document.getElementById('login-lembrar').checked = true;
+    }
+  } catch {}
 }
 
 function mostrarApp() {
@@ -1649,6 +1671,14 @@ function fazerLogin() {
 
   usuarioAtual = { perfil };
   sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(usuarioAtual));
+
+  const lembrar = document.getElementById('login-lembrar').checked;
+  if (lembrar) {
+    localStorage.setItem(LEMBRAR_KEY, JSON.stringify({ perfil, senha }));
+  } else {
+    localStorage.removeItem(LEMBRAR_KEY);
+  }
+
   erroEl.textContent = '';
   mostrarApp();
 }
