@@ -273,9 +273,9 @@
       <ul class="navbar-nav ms-auto" id="nav-tabs-list">
         <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-upload')"><i class="bi bi-upload me-1"></i>Carregar Arquivos</a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-servidores')"><i class="bi bi-people-fill me-1"></i>Servidores</a></li>
-        <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-grade')"><i class="bi bi-calendar3-week me-1"></i>Grade da Semana</a></li>
-        <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-montar')"><i class="bi bi-pencil-square me-1"></i>Montar Grade</a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-impedimentos')"><i class="bi bi-slash-circle me-1"></i>Impedimentos</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-montar')"><i class="bi bi-pencil-square me-1"></i>Montar Grade</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-grade')"><i class="bi bi-archive-fill me-1"></i>Grade Completa</a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('tab-relatorio')"><i class="bi bi-bar-chart-fill me-1"></i>Relatórios</a></li>
       </ul>
       <div class="d-flex align-items-center gap-2 ms-3 mt-2 mt-lg-0 no-print" id="user-info">
@@ -449,8 +449,8 @@
                 <label class="form-label">Função <span class="text-danger">*</span></label>
                 <select class="form-select" id="serv-funcao" required>
                   <option value="">Selecione...</option>
-                  <option value="Professor">Professor</option>
-                  <option value="Monitor">Monitor</option>
+                  <option value="PROFESSOR">PROFESSOR</option>
+                  <option value="MONITOR">MONITOR</option>
                 </select>
               </div>
               <div class="col-12 col-md-6">
@@ -570,6 +570,24 @@
               <input type="date" class="form-control" id="imp-data" required />
             </div>
             <div class="mb-3">
+              <label class="form-label fw-semibold">Turnos afetados <span class="text-danger">*</span></label>
+              <div class="d-flex gap-3 mt-1">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="imp-turno-manha" value="MANHÃ" checked>
+                  <label class="form-check-label" for="imp-turno-manha">Manhã</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="imp-turno-tarde" value="TARDE" checked>
+                  <label class="form-check-label" for="imp-turno-tarde">Tarde</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="imp-turno-noite" value="NOITE" checked>
+                  <label class="form-check-label" for="imp-turno-noite">Noite</label>
+                </div>
+              </div>
+              <div class="form-text text-muted">Selecione os turnos em que o servidor estará impedido.</div>
+            </div>
+            <div class="mb-3">
               <label class="form-label">Motivo <span class="text-muted">(opcional)</span></label>
               <input type="text" class="form-control" id="imp-motivo"
                      placeholder="Ex: Férias, Licença médica, Curso externo..." />
@@ -586,7 +604,7 @@
 
   <!-- ===================== TAB: GRADE ===================== -->
   <div id="tab-grade" style="display:none">
-    <h5 class="section-title">Grade da Semana</h5>
+    <h5 class="section-title">Grade Completa — Histórico de Grades</h5>
 
     <div class="card p-3 mb-3 no-print shadow-sm">
       <div class="row g-2 align-items-end">
@@ -665,13 +683,6 @@
           </select>
         </div>
 
-        <!-- Cód. Aula -->
-        <div class="col-12 col-sm-6 col-md-2">
-          <label class="form-label small fw-semibold mb-1">Cód. Aula</label>
-          <input type="text" class="form-control form-control-sm" id="grade-filt-codaula"
-                 placeholder="Ex: A001" oninput="renderGrade()" />
-        </div>
-
         <!-- Turma -->
         <div class="col-12 col-sm-6 col-md-2">
           <label class="form-label small fw-semibold mb-1">Turma</label>
@@ -679,17 +690,32 @@
                  placeholder="Ex: K (11)" oninput="renderGrade()" />
         </div>
 
-      </div>
-      <!-- Botão limpar filtros e adicionar linha -->
-      <div class="mt-2 d-flex justify-content-between align-items-center">
-        <div class="d-flex gap-2">
-          <button class="btn btn-sm btn-primary" onclick="abrirModalGrade()">
-            <i class="bi bi-plus-circle me-1"></i>Adicionar Linha
-          </button>
-          <button class="btn btn-sm btn-outline-danger" onclick="limparTodaGrade()" title="Excluir todas as linhas da grade">
-            <i class="bi bi-trash me-1"></i>Limpar Tudo
-          </button>
+        <!-- Conflitos -->
+        <div class="col-12 col-sm-6 col-md-2">
+          <label class="form-label small fw-semibold mb-1">Conflitos</label>
+          <select class="form-select form-select-sm" id="grade-filt-conflito" onchange="renderGrade()">
+            <option value="">Todos</option>
+            <option value="conflito">Apenas conflitos</option>
+          </select>
         </div>
+
+        <!-- Checkbox datas retroativas -->
+        <div class="col-12 mt-1">
+          <div class="form-check form-check-sm">
+            <input class="form-check-input" type="checkbox" id="grade-ocultar-passados"
+                   checked onchange="_gradeOcultarPassados=this.checked;renderGrade()">
+            <label class="form-check-label small text-muted" for="grade-ocultar-passados">
+              Desmarcar datas retroativas
+            </label>
+          </div>
+        </div>
+
+      </div>
+      <!-- Botão limpar filtros -->
+      <div class="mt-2 d-flex justify-content-between align-items-center">
+        <button class="btn btn-sm btn-outline-danger no-print" onclick="abrirModalLimparGradeCompleta()" title="Excluir todo o histórico (requer senha)">
+          <i class="bi bi-trash me-1"></i>Limpar Tudo
+        </button>
         <button class="btn btn-sm btn-link text-secondary p-0" onclick="limparFiltrosGrade()">
           <i class="bi bi-x-circle me-1"></i>Limpar filtros
         </button>
@@ -722,8 +748,8 @@
           <div style="font-size:1.6rem;font-weight:700" id="grade-cnt-ignor">0</div>
         </div>
       </div>
-      <div class="col-12 col-md">
-        <div class="card text-center p-2 shadow-sm" style="background:#f57f17;color:#fff;border-radius:10px">
+      <div class="col-6 col-md">
+        <div class="card text-center p-2 shadow-sm" style="background:#f57c00;color:#fff;border-radius:10px">
           <div class="small opacity-75">Conflitos</div>
           <div style="font-size:1.6rem;font-weight:700" id="grade-cnt-conf">0</div>
         </div>
@@ -764,22 +790,21 @@
       <i class="bi bi-floppy2-fill text-primary"></i>
       <span>As alocações são <strong>salvas automaticamente</strong> neste navegador (localStorage).</span>
       <div class="ms-auto d-flex gap-2 flex-wrap">
+        <button class="btn btn-sm btn-success fw-semibold" onclick="submeterGrade()" title="Enviar a grade montada para o histórico permanente">
+          <i class="bi bi-send-check-fill me-1"></i>Submeter Grade
+        </button>
         <button class="btn btn-sm btn-primary" onclick="distribuirEscalaAutomaticamente()" title="Distribuir vagas igualmente entre todos os servidores disponíveis">
           <i class="bi bi-shuffle me-1"></i>Distribuir Automaticamente
-        </button>
-        <button class="btn btn-sm btn-outline-primary" onclick="exportarGradeJSON()">
-          <i class="bi bi-download me-1"></i>Exportar JSON
-        </button>
-        <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('import-grade-json').click()">
-          <i class="bi bi-upload me-1"></i>Importar JSON
         </button>
         <button class="btn btn-sm btn-outline-success" onclick="exportarGradeCSV()">
           <i class="bi bi-filetype-csv me-1"></i>Exportar Grade Preenchida
         </button>
-        <button class="btn btn-sm btn-outline-danger" onclick="limparAlocacoes()">
-          <i class="bi bi-trash me-1"></i>Limpar tudo
+        <button class="btn btn-sm btn-outline-warning" onclick="limparAlocacoes()">
+          <i class="bi bi-eraser me-1"></i>Limpar preenchimento das Alocações
         </button>
-        <input type="file" id="import-grade-json" class="d-none" accept=".json" onchange="importarGradeJSON(this)" />
+        <button class="btn btn-sm btn-outline-danger" onclick="limparTudoMontarGrade()">
+          <i class="bi bi-trash me-1"></i>Limpar Tudo
+        </button>
       </div>
     </div>
 
@@ -972,6 +997,15 @@
             <i class="bi bi-x-circle me-1"></i>Limpar filtros
           </button>
         </div>
+        <div class="col-12 mt-1">
+          <div class="form-check form-check-sm">
+            <input class="form-check-input" type="checkbox" id="imp-ocultar-passados"
+                   checked onchange="_impOcultarPassados=this.checked;renderImpedimentos()">
+            <label class="form-check-label small text-muted" for="imp-ocultar-passados">
+              Desmarcar datas retroativas
+            </label>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -985,8 +1019,9 @@
                 <th style="width:110px">Data</th>
                 <th>Servidor</th>
                 <th style="width:130px">Função</th>
+                <th style="width:130px">Turnos</th>
                 <th>Motivo</th>
-                <th class="no-print" style="width:60px">Ações</th>
+                <th class="no-print" style="width:90px">Ações</th>
               </tr>
             </thead>
             <tbody id="tbl-imp-body"></tbody>
@@ -1237,6 +1272,90 @@
 
 </div><!-- /container -->
 
+<!-- Modal: Editar registro da Grade Completa -->
+<div class="modal fade" id="modalEditarGradeCompleta" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header" style="background:var(--pf-azul);color:#fff">
+        <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>Editar Registro — Grade Completa</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="edit-gc-idx" />
+        <div class="row g-3">
+          <div class="col-12 col-md-6">
+            <label class="form-label">Data</label>
+            <input type="date" class="form-control" id="edit-gc-data" />
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">Horário</label>
+            <input type="text" class="form-control" id="edit-gc-horario" placeholder="Ex: 08:00-10:00" />
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">Módulo</label>
+            <input type="text" class="form-control" id="edit-gc-modulo" />
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">Cód. Aula</label>
+            <input type="text" class="form-control" id="edit-gc-codaula" />
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">Função</label>
+            <input type="text" class="form-control" id="edit-gc-funcao"
+                   list="edit-gc-funcao-list" placeholder="Ex: PROFESSOR, MONITOR" />
+            <datalist id="edit-gc-funcao-list">
+              <option value="PROFESSOR">
+              <option value="MONITOR">
+            </datalist>
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">Turma</label>
+            <input type="text" class="form-control" id="edit-gc-turma" />
+          </div>
+          <div class="col-12">
+            <label class="form-label">Servidor Alocado</label>
+            <input type="text" class="form-control" id="edit-gc-servidor"
+                   list="edit-gc-servidor-list" placeholder="Nome do servidor..." />
+            <datalist id="edit-gc-servidor-list"></datalist>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="salvarEdicaoGradeCompleta()">
+          <i class="bi bi-check-lg me-1"></i>Salvar alterações
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Confirmação de senha para Limpar Grade Completa -->
+<div class="modal fade" id="modalLimparGradeCompleta" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header" style="background:#b71c1c;color:#fff">
+        <h5 class="modal-title"><i class="bi bi-shield-lock me-2"></i>Confirmação de Segurança</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="small text-muted mb-2">Esta ação <strong>apaga todo o histórico</strong> da Grade Completa e não pode ser desfeita.</p>
+        <label class="form-label small fw-semibold">Senha do Administrador</label>
+        <input type="password" class="form-control" id="limpar-grade-senha"
+               placeholder="Digite a senha admin..."
+               onkeydown="if(event.key==='Enter') confirmarLimparGradeCompleta()" />
+        <div class="text-danger small mt-1" id="limpar-grade-erro" style="min-height:1.1rem"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-danger btn-sm" onclick="confirmarLimparGradeCompleta()">
+          <i class="bi bi-trash me-1"></i>Limpar Tudo
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 // ============================================================
@@ -1394,6 +1513,11 @@ function showTab(id) {
   ['tab-upload','tab-servidores','tab-grade','tab-montar','tab-relatorio','tab-impedimentos']
     .forEach(t => document.getElementById(t).style.display = 'none');
   document.getElementById(id).style.display = '';
+  if (id === 'tab-grade') {
+    carregarGradeCompleta();
+    buildGradeCompletaFilters();
+    renderGrade();
+  }
   if (id === 'tab-montar') {
     if (firebaseEnabled && db) {
       carregarAlocacoesFirebase().then(() => renderMontarGrade());
@@ -1403,6 +1527,8 @@ function showTab(id) {
     }
   }
   if (id === 'tab-relatorio') {
+    carregarGradeCompleta();
+    buildFilters();
     _popularSelectGrade();
     _relAtualizarEstado();
     if (_relLoadingCount === 0) renderRelatorio();
@@ -1582,6 +1708,14 @@ function parseSemana(file) {
         _keyCount[base]++;
       });
 
+      // Pré-popular alocações com servidores já informados no arquivo
+      grade.forEach(g => {
+        if (g.servidor && g.servidor.trim() && !alocacoes[g.slotKey]) {
+          alocacoes[g.slotKey] = g.servidor.trim();
+        }
+      });
+      salvarAlocacoes();
+
       markLoaded('zone-sem', 'icon-sem', 'label-sem', 'sub-sem', file.name);
       addStatus('✅ Grade carregada: ' + grade.length + ' registros — ' + semanaLabel, 'success');
       
@@ -1605,7 +1739,27 @@ function checkBothLoaded() {
     buildFilters();
     renderServidores();
     renderGrade();
+    _alertarServidoresNaoEncontrados();
   }
+}
+
+function _alertarServidoresNaoEncontrados() {
+  const nomesConhecidos = new Set(
+    servidores.map(s => (s.nome || '').trim().toLowerCase())
+  );
+  const naoEncontrados = new Set();
+  grade.forEach(g => {
+    const srv = (g.servidor || '').trim();
+    if (srv && srv !== '[IGNORAR]' && !nomesConhecidos.has(srv.toLowerCase())) {
+      naoEncontrados.add(srv);
+    }
+  });
+  if (naoEncontrados.size === 0) return;
+  const lista = [...naoEncontrados].map(n => `  • ${n}`).join('\n');
+  alert(
+    `⚠️ Os seguintes servidores estão na planilha da semana mas não foram encontrados no cadastro:\n\n${lista}\n\n` +
+    `Verifique se o nome está exatamente igual na planilha de servidores.`
+  );
 }
 
 // ============================================================
@@ -1722,12 +1876,6 @@ function msClearAll(filtId) {
   msChanged(filtId);
 }
 
-function limparFiltrosGrade() {
-  ['grade-filt-data','grade-filt-horario','grade-filt-modulo','grade-filt-funcao','grade-filt-codaula'].forEach(msClearAll);
-  document.getElementById('grade-filt-epol').value = '';
-  document.getElementById('grade-filt-turma').value = '';
-  renderGrade();
-}
 
 // ============================================================
 // CRUD GRADE
@@ -1899,47 +2047,73 @@ function excluirLinhaGrade(index) {
 }
 
 // ============================================================
-// GRADE
+// GRADE COMPLETA
 // ============================================================
-function buildFilters() {
-  if (!grade || grade.length === 0) {
-    console.warn('buildFilters: Grade vazia, pulando...');
-    return;
-  }
 
-  const datas    = [...new Set(grade.filter(g => g && g.data).map(g => g.data))].sort();
-  const horarios = [...new Set(grade.filter(g => g && g.horario).map(g => g.horario))].sort();
-  const modulos  = [...new Set(grade.filter(g => g && g.modulo).map(g => g.modulo))].filter(Boolean).sort();
-  const funcoes  = [...new Set(grade.filter(g => g && g.funcao).map(g => g.funcao))].sort();
-  const codAulas = [...new Set(grade.filter(g => g && g.codAula).map(g => g.codAula))].filter(Boolean).sort();
-
-  // Multi-select dropdowns da aba Grade
+// Reconstrói os filtros multi-select da aba Grade Completa a partir do histórico
+function buildGradeCompletaFilters() {
+  if (!gradeCompleta.length) return;
+  const datas    = [...new Set(gradeCompleta.map(g => g.data).filter(Boolean))].sort();
+  const horarios = [...new Set(gradeCompleta.map(g => g.horario).filter(Boolean))].sort();
+  const modulos  = [...new Set(gradeCompleta.map(g => g.modulo).filter(Boolean))].sort();
+  const funcoes  = [...new Set(gradeCompleta.map(g => g.funcao).filter(Boolean))].sort();
+  const codAulas = [...new Set(gradeCompleta.map(g => g.codAula).filter(Boolean))].sort();
   buildMultiSelectMenu('grade-filt-data',    datas,    d => formatDate(d));
   buildMultiSelectMenu('grade-filt-horario', horarios);
   buildMultiSelectMenu('grade-filt-modulo',  modulos);
   buildMultiSelectMenu('grade-filt-funcao',  funcoes);
   buildMultiSelectMenu('grade-filt-codaula', codAulas);
+}
 
-  // Filtros do novo Relatórios
+// Mantém buildFilters para manter compatibilidade com o restante do código (Relatórios)
+function buildFilters() {
+  const src = gradeCompleta.length ? gradeCompleta : grade;
+  if (!src.length) return;
+  const datas  = [...new Set(src.filter(g => g && g.data).map(g => g.data))].sort();
+  const funcoes = [...new Set(src.filter(g => g && g.funcao).map(g => g.funcao))].sort();
   buildRelFilters(datas, funcoes);
 }
 
+function getConflitosGradeCompleta() {
+  const map = {};
+  gradeCompleta.forEach((g, idx) => {
+    const srv = g.servidorAlocado || '';
+    if (!srv || srv === '[IGNORAR]') return;
+    const key = `${g.data}|${g.horario}|${srv}`;
+    if (!map[key]) map[key] = [];
+    map[key].push(idx);
+  });
+  const confSet = new Set();
+  Object.values(map).forEach(idxs => {
+    if (idxs.length > 1) idxs.forEach(i => confSet.add(i));
+  });
+  return confSet;
+}
+
 function renderGrade() {
-  if (!grade || grade.length === 0) {
-    document.getElementById('tbl-grade-body').innerHTML = '<tr><td colspan="9" class="text-center text-muted py-3">Nenhuma grade carregada</td></tr>';
+  if (!gradeCompleta || gradeCompleta.length === 0) {
+    document.getElementById('tbl-grade-body').innerHTML =
+      '<tr><td colspan="9" class="text-center text-muted py-4">' +
+      '<i class="bi bi-archive" style="font-size:2rem;opacity:.3;display:block;margin-bottom:.5rem"></i>' +
+      'Nenhum registro no histórico ainda.<br><span class="small">Monte a grade e clique em <strong>Submeter Grade</strong> para registrar.</span>' +
+      '</td></tr>';
     document.getElementById('grade-status-counters').style.display = 'none';
     return;
   }
 
-  const dtSel    = msGetSelected('grade-filt-data');
-  const horSel   = msGetSelected('grade-filt-horario');
-  const modSel   = msGetSelected('grade-filt-modulo');
-  const funSel   = msGetSelected('grade-filt-funcao');
-  const codSel   = msGetSelected('grade-filt-codaula');
+  const dtSel       = msGetSelected('grade-filt-data');
+  const horSel      = msGetSelected('grade-filt-horario');
+  const modSel      = msGetSelected('grade-filt-modulo');
+  const funSel      = msGetSelected('grade-filt-funcao');
+  const codSel      = msGetSelected('grade-filt-codaula');
   const epolFilt = document.getElementById('grade-filt-epol')?.value || '';
   const turmFilt = document.getElementById('grade-filt-turma')?.value?.toLowerCase() || '';
+  const confFilt = document.getElementById('grade-filt-conflito')?.value || '';
+  const hoje     = new Date().toISOString().slice(0, 10);
 
-  const filtered = grade.filter(g => {
+  const confSet = getConflitosGradeCompleta();
+
+  const filtered = gradeCompleta.filter((g, idx) => {
     if (!g) return false;
     if (dtSel.size  && !dtSel.has(g.data))     return false;
     if (horSel.size && !horSel.has(g.horario)) return false;
@@ -1948,13 +2122,14 @@ function renderGrade() {
     if (codSel.size && !codSel.has(g.codAula)) return false;
     if (epolFilt && !isEpol(g.funcao)) return false;
     if (turmFilt && g.turma && !g.turma.toLowerCase().includes(turmFilt)) return false;
+    if (_gradeOcultarPassados && g.data && g.data < hoje) return false;
+    if (confFilt === 'conflito' && !confSet.has(idx)) return false;
     return true;
   });
 
-  const conf   = getConflitos();
-  const preen  = filtered.filter(g => { const s = alocacoes[g.slotKey] || g.servidor || ''; return s && s !== '[IGNORAR]'; }).length;
-  const ignor  = filtered.filter(g => (alocacoes[g.slotKey] || '') === '[IGNORAR]').length;
-  const confC  = filtered.filter(g => conf.has(g.slotKey)).length;
+  const preen = filtered.filter(g => g.servidorAlocado && g.servidorAlocado !== '[IGNORAR]').length;
+  const ignor = filtered.filter(g => g.servidorAlocado === '[IGNORAR]').length;
+  const confC = filtered.filter((g, i) => confSet.has(gradeCompleta.indexOf(g))).length;
   set('grade-cnt-total',  filtered.length);
   set('grade-cnt-preen',  preen);
   set('grade-cnt-aberto', filtered.length - preen - ignor);
@@ -1965,18 +2140,17 @@ function renderGrade() {
   let html = '';
   filtered.forEach(g => {
     if (!g) return;
-    const originalIndex = grade.indexOf(g);
-    const srv      = alocacoes[g.slotKey] || g.servidor || '';
+    const idx      = gradeCompleta.indexOf(g);
+    const srv      = g.servidorAlocado || '';
     const isIgn    = srv === '[IGNORAR]';
-    const isConf   = conf.has(g.slotKey);
     const isPreench = srv && !isIgn;
+    const isConf   = confSet.has(idx);
 
     let rowClass = '', statusBadge = '';
     if (isConf) {
       rowClass = 'table-warning';
       statusBadge = '<span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>Conflito</span>';
     } else if (isIgn) {
-      rowClass = '';
       statusBadge = '<span class="badge bg-info text-white">Ignorado</span>';
     } else if (isPreench) {
       rowClass = 'table-success';
@@ -2004,18 +2178,102 @@ function renderGrade() {
       <td>${srvCell}</td>
       <td>${escHtml(g.turma)}</td>
       <td>${statusBadge}</td>
-      <td class="no-print">
-        <button class="btn btn-sm btn-outline-primary btn-acao me-1" onclick="editarLinhaGrade(${originalIndex})" title="Editar">
+      <td class="no-print" style="white-space:nowrap">
+        <button class="btn btn-sm btn-outline-primary btn-acao me-1" onclick="editarLinhaGradeCompleta(${idx})" title="Editar">
           <i class="bi bi-pencil"></i>
         </button>
-        <button class="btn btn-sm btn-outline-danger btn-acao" onclick="excluirLinhaGrade(${originalIndex})" title="Excluir">
+        <button class="btn btn-sm btn-outline-danger btn-acao" onclick="excluirLinhaGradeCompleta(${idx})" title="Excluir">
           <i class="bi bi-trash"></i>
         </button>
       </td>
     </tr>`;
   });
-  document.getElementById('tbl-grade-body').innerHTML = html || '<tr><td colspan="9" class="text-center text-muted py-3">Nenhum registro encontrado</td></tr>';
-  document.getElementById('grade-count-footer').textContent = filtered.length + ' registro(s) exibido(s)';
+  document.getElementById('tbl-grade-body').innerHTML = html ||
+    '<tr><td colspan="9" class="text-center text-muted py-3">Nenhum registro encontrado com os filtros selecionados</td></tr>';
+  document.getElementById('grade-count-footer').textContent = filtered.length + ' registro(s) exibido(s) de ' + gradeCompleta.length + ' total';
+}
+
+function editarLinhaGradeCompleta(idx) {
+  const g = gradeCompleta[idx];
+  if (!g) return;
+  document.getElementById('edit-gc-idx').value = idx;
+  document.getElementById('edit-gc-data').value    = g.data     || '';
+  document.getElementById('edit-gc-horario').value = g.horario  || '';
+  document.getElementById('edit-gc-modulo').value  = g.modulo   || '';
+  document.getElementById('edit-gc-codaula').value = g.codAula  || '';
+  document.getElementById('edit-gc-funcao').value  = g.funcao   || '';
+  document.getElementById('edit-gc-turma').value   = g.turma    || '';
+  document.getElementById('edit-gc-servidor').value = g.servidorAlocado || '';
+  // popular datalist com servidores cadastrados
+  document.getElementById('edit-gc-servidor-list').innerHTML =
+    [...new Set([
+      ...servidores.map(s => s.nome),
+      ...gradeCompleta.map(e => e.servidorAlocado || '').filter(Boolean)
+    ])].sort((a, b) => a.localeCompare(b, 'pt-BR'))
+      .map(n => `<option value="${escHtml(n)}">`)
+      .join('');
+  new bootstrap.Modal(document.getElementById('modalEditarGradeCompleta')).show();
+}
+
+function salvarEdicaoGradeCompleta() {
+  const idx = parseInt(document.getElementById('edit-gc-idx').value);
+  if (isNaN(idx) || idx < 0 || idx >= gradeCompleta.length) return;
+  const g = gradeCompleta[idx];
+  g.data           = document.getElementById('edit-gc-data').value;
+  g.horario        = document.getElementById('edit-gc-horario').value.trim();
+  g.modulo         = document.getElementById('edit-gc-modulo').value.trim();
+  g.codAula        = document.getElementById('edit-gc-codaula').value.trim();
+  g.funcao         = document.getElementById('edit-gc-funcao').value.trim();
+  g.turma          = document.getElementById('edit-gc-turma').value.trim();
+  g.servidorAlocado = document.getElementById('edit-gc-servidor').value.trim();
+  salvarGradeCompleta();
+  buildGradeCompletaFilters();
+  renderGrade();
+  bootstrap.Modal.getInstance(document.getElementById('modalEditarGradeCompleta')).hide();
+  mostrarToast('Registro atualizado com sucesso!');
+}
+
+function excluirLinhaGradeCompleta(idx) {
+  if (!confirm('Excluir este registro do histórico?')) return;
+  gradeCompleta.splice(idx, 1);
+  salvarGradeCompleta();
+  buildGradeCompletaFilters();
+  renderGrade();
+}
+
+function limparFiltrosGrade() {
+  ['grade-filt-data','grade-filt-horario','grade-filt-modulo','grade-filt-funcao','grade-filt-codaula'].forEach(msClearAll);
+  document.getElementById('grade-filt-epol').value = '';
+  document.getElementById('grade-filt-turma').value = '';
+  document.getElementById('grade-filt-conflito').value = '';
+  const chk = document.getElementById('grade-ocultar-passados');
+  if (chk) chk.checked = _gradeOcultarPassados = true;
+  renderGrade();
+}
+
+function abrirModalLimparGradeCompleta() {
+  if (!gradeCompleta.length) {
+    alert('O histórico já está vazio.');
+    return;
+  }
+  document.getElementById('limpar-grade-senha').value = '';
+  document.getElementById('limpar-grade-erro').textContent = '';
+  new bootstrap.Modal(document.getElementById('modalLimparGradeCompleta')).show();
+}
+
+function confirmarLimparGradeCompleta() {
+  const senha = document.getElementById('limpar-grade-senha').value;
+  if (senha !== SENHA_ADMIN) {
+    document.getElementById('limpar-grade-erro').textContent = 'Senha incorreta.';
+    document.getElementById('limpar-grade-senha').focus();
+    return;
+  }
+  gradeCompleta = [];
+  salvarGradeCompleta();
+  buildGradeCompletaFilters();
+  renderGrade();
+  bootstrap.Modal.getInstance(document.getElementById('modalLimparGradeCompleta')).hide();
+  mostrarToast('Histórico da Grade Completa apagado com sucesso.');
 }
 
 // ============================================================
@@ -2129,9 +2387,25 @@ function formatDate(iso) {
   return `${d}/${m}/${y}`;
 }
 
-function isDisponivelNaData(s, dt) {
-  // Verificar impedimentos cadastrados para este servidor nesta data
-  if (impedimentos.some(imp => imp.servidorNome === s.nome && imp.data === dt)) return false;
+function getTurnoFromHorario(horario) {
+  if (!horario) return '';
+  const m = horario.match(/^(\d{1,2})/);
+  if (!m) return '';
+  const h = parseInt(m[1]);
+  if (h >= 5  && h < 12) return 'MANHÃ';
+  if (h >= 12 && h < 18) return 'TARDE';
+  return 'NOITE';
+}
+
+function isDisponivelNaData(s, dt, horario) {
+  // Verificar impedimentos cadastrados para este servidor nesta data/turno
+  const temImpedimento = impedimentos.some(imp => {
+    if (imp.servidorNome !== s.nome || imp.data !== dt) return false;
+    const turnos = (imp.turnos && imp.turnos.length) ? imp.turnos : ['MANHÃ', 'TARDE', 'NOITE'];
+    if (!horario) return true; // sem horário: bloqueia se há qualquer impedimento no dia
+    return turnos.includes(getTurnoFromHorario(horario));
+  });
+  if (temImpedimento) return false;
   // Sem datas = disponibilidade total (regra explícita do usuário)
   if (!s.dtIni && !s.dtFim) return true;
   if (s.dtIni && dt < s.dtIni) return false;
@@ -2192,9 +2466,13 @@ function escHtml(s) {
 // MONTAR GRADE — PERSISTÊNCIA
 // ============================================================
 const STORAGE_KEY = 'epol-grade-assignments';
+const GRADE_COMPLETA_KEY = 'epol-grade-completa';
 
 // alocacoes: { slotKey -> nomeServidor }
 let alocacoes = {};
+
+// gradeCompleta: histórico permanente de todas as grades submetidas
+let gradeCompleta = [];
 
 // Filtro multi-seleção de funções
 let mgFuncoesSelecionadas = new Set();
@@ -2207,6 +2485,49 @@ function carregarAlocacoes() {
   // Firebase: alocações carregadas após a grade carregar (semanaLabel precisa estar definido)
   // No startup, carrega apenas do LocalStorage como estado inicial
   carregarAlocacoesLocal();
+}
+
+// ── Grade Completa ──────────────────────────────────────────
+function carregarGradeCompleta() {
+  if (firebaseEnabled && db) {
+    carregarGradeCompletaFirebase();
+  } else {
+    carregarGradeCompletaLocal();
+  }
+}
+
+function carregarGradeCompletaLocal() {
+  try {
+    gradeCompleta = JSON.parse(localStorage.getItem(GRADE_COMPLETA_KEY) || '[]');
+  } catch { gradeCompleta = []; }
+}
+
+function salvarGradeCompleta() {
+  localStorage.setItem(GRADE_COMPLETA_KEY, JSON.stringify(gradeCompleta));
+  if (firebaseEnabled && db) salvarGradeCompletaFirebase();
+}
+
+async function salvarGradeCompletaFirebase() {
+  if (!db) return;
+  try {
+    await db.collection('config').doc('grade-completa').set({ entradas: gradeCompleta });
+  } catch (e) { console.error('Erro ao salvar Grade Completa no Firebase:', e); }
+}
+
+async function carregarGradeCompletaFirebase() {
+  if (!db) { carregarGradeCompletaLocal(); return; }
+  try {
+    const doc = await db.collection('config').doc('grade-completa').get();
+    if (doc.exists) {
+      gradeCompleta = doc.data().entradas || [];
+      localStorage.setItem(GRADE_COMPLETA_KEY, JSON.stringify(gradeCompleta));
+    } else {
+      carregarGradeCompletaLocal();
+    }
+  } catch (e) {
+    console.error('Erro ao carregar Grade Completa do Firebase:', e);
+    carregarGradeCompletaLocal();
+  }
 }
 
 function salvarAlocacoes() {
@@ -2283,6 +2604,22 @@ function limparAlocacoes() {
   renderMontarGrade();
 }
 
+function limparTudoMontarGrade() {
+  if (!grade.length && !Object.keys(alocacoes).length) {
+    alert('Não há informações para limpar.');
+    return;
+  }
+  if (!confirm('Limpar TUDO da aba Montar Grade?\n\nIsso apagará a grade e todas as alocações. Esta ação não pode ser desfeita.')) return;
+
+  grade.length = 0;
+  alocacoes = {};
+  salvarAlocacoes();
+  salvarGradeLocal();
+  if (firebaseEnabled && db) salvarGradeNoFirebase();
+  renderMontarGrade();
+  mostrarToast('Montar Grade limpa com sucesso.');
+}
+
 // Distribuir escala automaticamente de forma equilibrada
 function distribuirEscalaAutomaticamente() {
   if (!grade || !grade.length || !servidores || !servidores.length) {
@@ -2297,7 +2634,8 @@ function distribuirEscalaAutomaticamente() {
     '• Distribuir IGUALMENTE entre os servidores disponíveis\n' +
     '• Respeitar função compatível\n' +
     '• Professores PODEM atuar como Monitores\n' +
-    '• Respeitar disponibilidade de data\n' +
+    '• Respeitar disponibilidade de data e turno\n' +
+    '• Respeitar impedimentos por turno\n' +
     '• Evitar conflitos de horário\n' +
     '• Equilibrar a carga de trabalho\n\n' +
     '⚠️ As alocações manuais serão MANTIDAS.\n\n' +
@@ -2420,8 +2758,8 @@ function distribuirVagasPorFuncao(vagas, servidoresDisponiveis) {
   vagas.forEach(vaga => {
     // Encontrar servidores disponíveis para esta vaga
     const candidatos = servidoresDisponiveis.filter(s => {
-      // Verificar disponibilidade de data
-      if (!isDisponivelNaData(s, vaga.data)) return false;
+      // Verificar disponibilidade de data e turno
+      if (!isDisponivelNaData(s, vaga.data, vaga.horario)) return false;
       
       // Verificar conflito de horário
       const chaveOcupacao = `${s.nome}|${vaga.data}|${vaga.horario}`;
@@ -2447,39 +2785,32 @@ function distribuirVagasPorFuncao(vagas, servidoresDisponiveis) {
   return alocadas;
 }
 
-// ============================================================
-// MONTAR GRADE — EXPORT / IMPORT JSON
-// ============================================================
-function exportarGradeJSON() {
-  const blob = new Blob([JSON.stringify(alocacoes, null, 2)], {type:'application/json'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'alocacoes_epol_' + new Date().toISOString().slice(0,10) + '.json';
-  a.click();
-}
-
-function importarGradeJSON(input) {
-  const f = input.files[0]; if (!f) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const data = JSON.parse(e.target.result);
-      alocacoes = {...alocacoes, ...data};
-      salvarAlocacoes();
-      renderMontarGrade();
-    } catch { alert('Arquivo JSON inválido.'); }
-    input.value = '';
-  };
-  reader.readAsText(f);
-}
 
 function exportarGradeCSV() {
   if (!grade.length) { alert('Nenhuma vaga na grade.'); return; }
+
+  const vazios = grade.filter(g => {
+    const srv = alocacoes[g.slotKey] || g.servidor || '';
+    return !srv || srv === '[IGNORAR]';
+  }).length;
+
+  let preencherVazios = false;
+  if (vazios > 0) {
+    preencherVazios = confirm(
+      'Há ' + vazios + ' vaga(s) sem servidor atribuído.\n\n' +
+      'Deseja preencher os campos vazios com "Ignorar (não preencher)" na exportação?\n\n' +
+      'OK → preencher vazios\nCancelar → deixar em branco'
+    );
+  }
+
   const header = ['DATA','HORARIO','MODULO','COD_AULA','FUNCAO','SERVIDOR','TURMA'];
   const rows = grade.map(g => {
     let srv = alocacoes[g.slotKey] || g.servidor || '';
-    // Se a vaga foi marcada como ignorar, deixar em branco no CSV
-    if (srv === '[IGNORAR]') srv = '';
+    if (srv === '[IGNORAR]') {
+      srv = preencherVazios ? 'Ignorar (não preencher)' : '';
+    } else if (!srv && preencherVazios) {
+      srv = 'Ignorar (não preencher)';
+    }
     return [g.data, g.horario, g.modulo, g.codAula, g.funcao, srv, g.turma]
       .map(v => '"' + (v||'').replace(/"/g,'""') + '"').join(';');
   });
@@ -2557,6 +2888,55 @@ function atualizarCardsMG() {
   set('mg-cnt-ignorado', ignoradas);
   set('mg-cnt-open', grade.length - filled - ignoradas);
   set('mg-cnt-conflict', conflicts);
+}
+
+// ── Submeter Grade ao histórico permanente ──────────────────
+function submeterGrade() {
+  if (!grade.length) {
+    alert('Nenhuma grade carregada para submeter. Carregue o arquivo na aba "Carregar Arquivos" primeiro.');
+    return;
+  }
+
+  const preenchidas = grade.filter(g => {
+    const srv = alocacoes[g.slotKey] || g.servidor || '';
+    return srv && srv !== '[IGNORAR]';
+  }).length;
+
+  const confirmMsg =
+    `Submeter esta grade ao histórico?\n\n` +
+    `• Total de vagas: ${grade.length}\n` +
+    `• Preenchidas: ${preenchidas}\n` +
+    `• Em aberto: ${grade.length - preenchidas}\n\n` +
+    `Os registros serão adicionados permanentemente à Grade Completa.`;
+
+  if (!confirm(confirmMsg)) return;
+
+  const agora = new Date().toISOString();
+  const novasEntradas = grade.map(g => ({
+    data: g.data || '',
+    horario: g.horario || '',
+    modulo: g.modulo || '',
+    codAula: g.codAula || '',
+    funcao: g.funcao || '',
+    turma: g.turma || '',
+    slotKey: g.slotKey || '',
+    servidorAlocado: alocacoes[g.slotKey] || g.servidor || '',
+    submetidaEm: agora
+  }));
+
+  gradeCompleta.push(...novasEntradas);
+  salvarGradeCompleta();
+  buildGradeCompletaFilters();
+
+  // Limpar Montar Grade após submissão
+  grade.length = 0;
+  alocacoes = {};
+  salvarAlocacoes();
+  salvarGradeLocal();
+  if (firebaseEnabled && db) salvarGradeNoFirebase();
+  renderMontarGrade();
+
+  mostrarToast(`Grade submetida com sucesso! ${novasEntradas.length} registro(s) adicionado(s) ao histórico.`);
 }
 
 function renderMontarGrade() {
@@ -3125,18 +3505,18 @@ function buildRelFilters(datas, funcoes) {
   populateSelect('rela-filt-data',    datas,   d => formatDate(d), d => d);
   populateSelect('rela-filt-funcao',  funcoes);
 
-  // Servidores já alocados (para filtro da grade preenchida)
+  // Servidores alocados na Grade Completa
   const nomesAlocados = [...new Set(
-    Object.values(alocacoes).filter(v => v && v !== '[IGNORAR]')
+    gradeCompleta.map(g => g.servidorAlocado || '').filter(v => v && v !== '[IGNORAR]')
   )].sort((a, b) => a.localeCompare(b, 'pt-BR'));
   populateSelect('relg-filt-servidor', nomesAlocados);
 }
 
 function renderRelGrade() {
   relAbaAtiva = 'rel-grade';
-  if (!grade.length) {
+  if (!gradeCompleta.length) {
     document.getElementById('tbl-relg-body').innerHTML =
-      '<tr><td colspan="8" class="text-center text-muted py-3">Nenhuma grade carregada</td></tr>';
+      '<tr><td colspan="8" class="text-center text-muted py-3">Nenhum registro na Grade Completa</td></tr>';
     ['relg-cnt-total','relg-cnt-preen','relg-cnt-aberto','relg-cnt-ignor','relg-cnt-conf']
       .forEach(id => set(id, 0));
     return;
@@ -3150,13 +3530,13 @@ function renderRelGrade() {
 
   const conf = getConflitos();
 
-  const filtered = grade.filter(g => {
+  const filtered = gradeCompleta.filter(g => {
     if (!g) return false;
     if (dataFilt && g.data !== dataFilt) return false;
     if (funcFilt && g.funcao !== funcFilt) return false;
     if (turmFilt && !((g.turma || '').toLowerCase().includes(turmFilt))) return false;
 
-    const srv = alocacoes[g.slotKey] || g.servidor || '';
+    const srv = g.servidorAlocado || '';
     if (servFilt && srv !== servFilt) return false;
 
     if (statusFilt) {
@@ -3171,8 +3551,8 @@ function renderRelGrade() {
   });
 
   // Cards
-  const preen  = filtered.filter(g => { const s = alocacoes[g.slotKey]||g.servidor||''; return s && s !== '[IGNORAR]'; }).length;
-  const ignor  = filtered.filter(g => (alocacoes[g.slotKey]||'') === '[IGNORAR]').length;
+  const preen  = filtered.filter(g => { const s = g.servidorAlocado || ''; return s && s !== '[IGNORAR]'; }).length;
+  const ignor  = filtered.filter(g => (g.servidorAlocado || '') === '[IGNORAR]').length;
   const confC  = filtered.filter(g => conf.has(g.slotKey)).length;
   set('relg-cnt-total',  filtered.length);
   set('relg-cnt-preen',  preen);
@@ -3182,7 +3562,7 @@ function renderRelGrade() {
 
   let html = '';
   filtered.forEach(g => {
-    const srv       = alocacoes[g.slotKey] || g.servidor || '';
+    const srv       = g.servidorAlocado || '';
     const isIgn     = srv === '[IGNORAR]';
     const isConf    = conf.has(g.slotKey);
     const isPreench = srv && !isIgn;
@@ -3240,12 +3620,13 @@ function renderRelCarga() {
 
   // Montar mapa de carga a partir das alocações
   const carga = {};
-  grade.forEach(g => {
-    const srv = alocacoes[g.slotKey];
+  gradeCompleta.forEach(g => {
+    const srv = g.servidorAlocado;
     if (!srv || srv === '[IGNORAR]') return;
     if (!carga[srv]) carga[srv] = { funcao: '', datas: new Set(), count: 0 };
     carga[srv].count++;
     carga[srv].datas.add(g.data);
+    if (!carga[srv].funcao) carga[srv].funcao = g.funcao || '';
   });
 
   // Enriquecer com dados do servidor
@@ -3286,9 +3667,9 @@ function renderRelCarga() {
 
 function renderRelAbertas() {
   relAbaAtiva = 'rel-abertas';
-  if (!grade.length) {
+  if (!gradeCompleta.length) {
     document.getElementById('tbl-rela-body').innerHTML =
-      '<tr><td colspan="6" class="text-center text-muted py-3">Nenhuma grade carregada</td></tr>';
+      '<tr><td colspan="6" class="text-center text-muted py-3">Nenhum registro na Grade Completa</td></tr>';
     set('rela-cnt-total', 0);
     return;
   }
@@ -3296,9 +3677,9 @@ function renderRelAbertas() {
   const dataFilt = document.getElementById('rela-filt-data')?.value || '';
   const funcFilt = document.getElementById('rela-filt-funcao')?.value || '';
 
-  const filtered = grade.filter(g => {
+  const filtered = gradeCompleta.filter(g => {
     if (!g) return false;
-    const srv = alocacoes[g.slotKey] || g.servidor || '';
+    const srv = g.servidorAlocado || '';
     if (srv) return false;
     if (dataFilt && g.data !== dataFilt) return false;
     if (funcFilt && g.funcao !== funcFilt) return false;
@@ -3422,6 +3803,8 @@ function limparFiltrosRelDisp() {
 // LOADING RELATÓRIOS
 // ============================================================
 let _relLoadingCount = 0;
+let _gradeOcultarPassados    = true;
+let _impOcultarPassados      = true;
 let _relOcultarPassadosGrade = true;
 let _relOcultarPassadosImp   = true;
 
@@ -3467,7 +3850,14 @@ function _popularSelectServidor(id, labelTodos) {
 }
 
 function _popularSelectGrade() {
-  _popularSelectServidor('meusdias-nome');
+  // meusdias-nome: servidores que constam no histórico da Grade Completa
+  const sel = document.getElementById('meusdias-nome');
+  if (sel) {
+    const atual = sel.value;
+    const nomes = [...new Set(gradeCompleta.map(g => g.servidorAlocado || '').filter(n => n && n !== '[IGNORAR]'))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    sel.innerHTML = '<option value="">— Todos —</option>' + nomes.map(n => `<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('');
+    if (atual) sel.value = atual;
+  }
   _popularSelectServidor('reld-filt-nome');
   _popularSelectServidor('rel-imp-filt-nome');
 }
@@ -3482,11 +3872,11 @@ function renderRelMeusDias() {
   const codAulaFilt = (document.getElementById('meusdias-codaula')?.value || '').toLowerCase();
   const content     = document.getElementById('meusdias-content');
 
-  if (!grade.length) {
+  if (!gradeCompleta.length) {
     content.innerHTML = `
       <div class="text-center text-muted py-5">
         <i class="bi bi-calendar3" style="font-size:2.5rem;opacity:.3"></i>
-        <div class="mt-2">Nenhuma grade carregada</div>
+        <div class="mt-2">Nenhum registro na Grade Completa. Monte a grade e clique em Submeter Grade.</div>
       </div>`;
     return;
   }
@@ -3495,12 +3885,12 @@ function renderRelMeusDias() {
   const DIAS_PT  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
   const hoje = new Date().toISOString().slice(0, 10);
 
-  const diasAlocados = grade.filter(g => {
+  const diasAlocados = gradeCompleta.filter(g => {
     if (!g) return false;
     if (_relOcultarPassadosGrade && g.data && g.data < hoje) return false;
-    const alocNome = alocacoes[g.slotKey] || g.servidor || '';
+    const alocNome = g.servidorAlocado || '';
     if (!alocNome || alocNome === '[IGNORAR]') return false;
-    if (nome && !alocNome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(nomeNorm)) return false;
+    if (nome && !alocNome.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').includes(nomeNorm)) return false;
     if (dataFilt && g.data !== dataFilt) return false;
     if (codAulaFilt && !(g.codAula || '').toLowerCase().includes(codAulaFilt)) return false;
     return true;
@@ -3529,7 +3919,7 @@ function renderRelMeusDias() {
             </thead><tbody>`;
   diasAlocados.forEach(g => {
     const dt  = g.data ? new Date(g.data + 'T00:00:00') : null;
-    const srv = alocacoes[g.slotKey] || g.servidor || '';
+    const srv = g.servidorAlocado || '';
     html += `<tr>
       <td>${escHtml(formatDate(g.data))}</td>
       <td class="rel-hide-xs">${dt ? DIAS_PT[dt.getDay()] : ''}</td>
@@ -3673,6 +4063,10 @@ function abrirModalImpedimento(servidorNomePre) {
   document.getElementById('modalImpedimentoTitulo').textContent = 'Novo Impedimento';
   document.getElementById('formImpedimento').reset();
   document.getElementById('imp-id').value = '';
+  // form.reset() desmarca checkboxes — restaurar padrão marcado
+  ['imp-turno-manha','imp-turno-tarde','imp-turno-noite'].forEach(id => {
+    document.getElementById(id).checked = true;
+  });
 
   // Popular select de servidores
   const sel = document.getElementById('imp-servidor');
@@ -3699,11 +4093,20 @@ function salvarImpedimento() {
   const servidorNome = document.getElementById('imp-servidor').value;
   const servidor = servidores.find(s => s.nome === servidorNome);
 
+  const turnos = ['imp-turno-manha','imp-turno-tarde','imp-turno-noite']
+    .filter(id => document.getElementById(id).checked)
+    .map(id => document.getElementById(id).value);
+  if (turnos.length === 0) {
+    alert('Selecione ao menos um turno para o impedimento.');
+    return;
+  }
+
   const impedimento = {
     id: idVal || 'imp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
     servidorNome: servidorNome,
     servidorFuncao: servidor ? (servidor.funcao || '') : '',
     data: document.getElementById('imp-data').value,
+    turnos: turnos,
     motivo: document.getElementById('imp-motivo').value.trim()
   };
 
@@ -3732,6 +4135,44 @@ function salvarImpedimento() {
   mostrarToast('Impedimento salvo!');
 }
 
+function editarImpedimento(id) {
+  const imp = impedimentos.find(i => i.id === id);
+  if (!imp) return;
+
+  document.getElementById('modalImpedimentoTitulo').textContent = 'Editar Impedimento';
+  document.getElementById('imp-id').value     = imp.id;
+  document.getElementById('imp-data').value   = imp.data   || '';
+  document.getElementById('imp-motivo').value = imp.motivo || '';
+
+  // Popular select e selecionar o servidor atual
+  const sel = document.getElementById('imp-servidor');
+  sel.innerHTML = '<option value="">Selecione o servidor...</option>';
+  [...servidores].sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'))
+    .forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.nome;
+      opt.textContent = s.nome + (s.funcao ? ' (' + s.funcao + ')' : '');
+      if (s.nome === imp.servidorNome) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  // Servidor histórico não mais cadastrado
+  if (imp.servidorNome && !servidores.find(s => s.nome === imp.servidorNome)) {
+    const opt = document.createElement('option');
+    opt.value = imp.servidorNome;
+    opt.textContent = imp.servidorNome + ' (não cadastrado)';
+    opt.selected = true;
+    sel.appendChild(opt);
+  }
+
+  // Marcar turnos conforme salvo
+  const turnosSalvos = (imp.turnos && imp.turnos.length) ? imp.turnos : ['MANHÃ', 'TARDE', 'NOITE'];
+  document.getElementById('imp-turno-manha').checked = turnosSalvos.includes('MANHÃ');
+  document.getElementById('imp-turno-tarde').checked = turnosSalvos.includes('TARDE');
+  document.getElementById('imp-turno-noite').checked = turnosSalvos.includes('NOITE');
+
+  new bootstrap.Modal(document.getElementById('modalImpedimento')).show();
+}
+
 function excluirImpedimento(id) {
   if (!confirm('Excluir este impedimento?')) return;
   impedimentos = impedimentos.filter(i => i.id !== id);
@@ -3752,13 +4193,15 @@ function excluirTodosImpedimentos() {
 
 function renderImpedimentos() {
   const nomeFilt = (document.getElementById('imp-filt-nome')?.value || '')
-    .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    .toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
   const dataFilt = document.getElementById('imp-filt-data')?.value || '';
+  const hoje     = new Date().toISOString().slice(0, 10);
 
   const filtered = impedimentos.filter(i => {
+    if (_impOcultarPassados && i.data && i.data < hoje) return false;
     if (dataFilt && i.data !== dataFilt) return false;
     if (nomeFilt) {
-      const nome = (i.servidorNome || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const nome = (i.servidorNome || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
       if (!nome.includes(nomeFilt)) return false;
     }
     return true;
@@ -3771,12 +4214,19 @@ function renderImpedimentos() {
     const funcaoUpper = (i.servidorFuncao || '').toUpperCase();
     const badge = funcaoUpper.includes('PROFESSOR') ? 'badge-professor'
                 : funcaoUpper.includes('MONITOR') ? 'badge-monitor' : 'bg-secondary';
+    const turnosImp = (i.turnos && i.turnos.length) ? i.turnos : ['MANHÃ', 'TARDE', 'NOITE'];
+    const turnoColors = { 'MANHÃ': 'bg-warning text-dark', 'TARDE': 'bg-info text-white', 'NOITE': 'bg-dark text-white' };
+    const turnosBadges = turnosImp.map(t => `<span class="badge ${turnoColors[t] || 'bg-secondary'} me-1" style="font-size:.7rem">${escHtml(t)}</span>`).join('');
     html += `<tr>
       <td><strong>${escHtml(formatDate(i.data))}</strong></td>
       <td class="fw-semibold">${escHtml(i.servidorNome)}</td>
       <td>${i.servidorFuncao ? '<span class="badge ' + badge + '">' + escHtml(i.servidorFuncao) + '</span>' : '—'}</td>
+      <td>${turnosBadges}</td>
       <td>${escHtml(i.motivo) || '<span class="text-muted">—</span>'}</td>
-      <td class="no-print">
+      <td class="no-print" style="white-space:nowrap">
+        <button class="btn btn-sm btn-outline-primary btn-acao me-1" onclick="editarImpedimento('${escHtml(i.id)}')" title="Editar">
+          <i class="bi bi-pencil"></i>
+        </button>
         <button class="btn btn-sm btn-outline-danger btn-acao" onclick="excluirImpedimento('${escHtml(i.id)}')" title="Excluir">
           <i class="bi bi-trash"></i>
         </button>
@@ -3786,7 +4236,7 @@ function renderImpedimentos() {
 
   const tbody = document.getElementById('tbl-imp-body');
   if (tbody) tbody.innerHTML = html ||
-    '<tr><td colspan="5" class="text-center text-muted py-3">Nenhum impedimento cadastrado</td></tr>';
+    '<tr><td colspan="6" class="text-center text-muted py-3">Nenhum impedimento cadastrado</td></tr>';
 
   const footer = document.getElementById('imp-count-footer');
   if (footer) footer.textContent =
@@ -3860,6 +4310,8 @@ function limparFiltrosImpedimentos() {
   const data = document.getElementById('imp-filt-data');
   if (nome) nome.value = '';
   if (data) data.value = '';
+  const chk = document.getElementById('imp-ocultar-passados');
+  if (chk) chk.checked = _impOcultarPassados = true;
   renderImpedimentos();
 }
 
@@ -4554,6 +5006,9 @@ carregarAlocacoes();
 
 // Carregar impedimentos (Firebase se disponível, senão LocalStorage)
 carregarImpedimentos();
+
+// Carregar histórico de grades submetidas
+carregarGradeCompleta();
 
 // Verificar sessão de autenticação e exibir login ou app
 verificarSessao();
