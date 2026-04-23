@@ -888,17 +888,24 @@
           </select>
         </div>
 
-        <!-- Checkbox datas retroativas -->
-        <div class="col-12 mt-1">
-          <div class="form-check form-check-sm">
-            <input class="form-check-input" type="checkbox" id="grade-ocultar-passados"
-                   checked onchange="_gradeOcultarPassados=this.checked;renderGrade()">
-            <label class="form-check-label small text-muted" for="grade-ocultar-passados">
-              Desmarcar datas retroativas
-            </label>
-          </div>
-        </div>
 
+      </div>
+      <!-- Checkboxes de opções -->
+      <div class="pt-2 mt-1 border-top">
+        <div class="form-check form-check-sm mb-1">
+          <input class="form-check-input" type="checkbox" id="grade-ocultar-passados"
+                 checked onchange="_gradeOcultarPassados=this.checked;renderGrade()">
+          <label class="form-check-label small text-muted" for="grade-ocultar-passados">
+            Desmarcar datas retroativas
+          </label>
+        </div>
+        <div class="form-check form-check-sm">
+          <input class="form-check-input" type="checkbox" id="grade-desconsiderar-ignorado"
+                 onchange="_gradeDesconsiderarIgnorado=this.checked;renderGrade()">
+          <label class="form-check-label small text-muted" for="grade-desconsiderar-ignorado">
+            Desconsiderar Status Ignorado
+          </label>
+        </div>
       </div>
       <!-- Botão limpar filtros -->
       <div class="mt-2 d-flex justify-content-between align-items-center">
@@ -1934,6 +1941,7 @@ function checkBothLoaded() {
 }
 
 function _alertarServidoresNaoEncontrados() {
+  if (!usuarioAtual || usuarioAtual.perfil !== 'admin') return;
   const nomesConhecidos = new Set(
     servidores.map(s => (s.nome || '').trim().toLowerCase())
   );
@@ -2313,6 +2321,7 @@ function renderGrade() {
     if (epolFilt && !isEpol(g.funcao)) return false;
     if (turmFilt && g.turma && !g.turma.toLowerCase().includes(turmFilt)) return false;
     if (_gradeOcultarPassados && g.data && g.data < hoje) return false;
+    if (_gradeDesconsiderarIgnorado && (g.servidorAlocado || '') === '[IGNORAR]') return false;
     if (confFilt === 'conflito' && !confSet.has(idx)) return false;
     return true;
   });
@@ -2443,6 +2452,8 @@ function limparFiltrosGrade() {
   document.getElementById('grade-filt-conflito').value = '';
   const chk = document.getElementById('grade-ocultar-passados');
   if (chk) chk.checked = _gradeOcultarPassados = true;
+  const chkIgn = document.getElementById('grade-desconsiderar-ignorado');
+  if (chkIgn) chkIgn.checked = _gradeDesconsiderarIgnorado = false;
   renderGrade();
 }
 
@@ -3998,7 +4009,8 @@ function limparFiltrosRelDisp() {
 // LOADING RELATÓRIOS
 // ============================================================
 let _relLoadingCount = 0;
-let _gradeOcultarPassados    = true;
+let _gradeOcultarPassados       = true;
+let _gradeDesconsiderarIgnorado = false;
 let _impOcultarPassados      = true;
 let _relOcultarPassadosGrade = true;
 let _relOcultarPassadosImp   = true;
