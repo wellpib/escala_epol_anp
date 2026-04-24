@@ -1780,6 +1780,7 @@ function showTab(id) {
     _relAtualizarEstado();
     if (_relLoadingCount === 0) renderRelatorio();
   }
+  if (id === 'tab-servidores') renderServidores();
   if (id === 'tab-impedimentos') renderImpedimentos();
 }
 
@@ -4762,6 +4763,12 @@ function carregarServidoresFirebase() {
     } else {
       // Se Firebase estiver vazio, tentar carregar do LocalStorage
       carregarServidoresLocal();
+    }
+    
+    // Atualizar interface se a aba de servidores estiver visível
+    const tabServidores = document.getElementById('tab-servidores');
+    if (tabServidores && tabServidores.style.display !== 'none') {
+      renderServidores();
     }
     
     // Carregar também a última grade salva e os impedimentos
